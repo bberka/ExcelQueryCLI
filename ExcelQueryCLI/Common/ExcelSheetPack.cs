@@ -213,6 +213,19 @@ public sealed class ExcelSheetPack
                double.TryParse(values[1], CultureInfo.InvariantCulture,out var matchValue6) &&
                cellValue5 >= matchValue5 &&
                cellValue5 <= matchValue6;
+      case FilterOperator.NOT_IN:
+        return matchFilterValue.Split("|").All(x => x.Trim() != cellFilterValue);
+      case FilterOperator.NOT_BETWEEN:
+        var values2 = matchFilterValue.Split("|");
+        if (values2.Length != 2) {
+          return false;
+        }
+
+        return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture,out var cellValue6) &&
+               double.TryParse(values2[0], CultureInfo.InvariantCulture,out var matchValue7) &&
+               double.TryParse(values2[1], CultureInfo.InvariantCulture,out var matchValue8) &&
+               (cellValue6 < matchValue7 ||
+                cellValue6 > matchValue8);
       default:
         throw new ArgumentOutOfRangeException(nameof(@operator), @operator, null);
     }
@@ -329,6 +342,18 @@ public sealed class ExcelSheetPack
           Log.Warning("UpdateCellValue::Failed to update cell value: {oldValue} {newValue}", oldValue, newValue);
         }
 
+        break;
+      case UpdateOperator.APPEND:
+        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        cell.CellValue = new CellValue(oldValue + newValue ?? string.Empty);
+        break;
+      case UpdateOperator.PREPEND:
+        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        cell.CellValue = new CellValue(newValue + oldValue ?? string.Empty);
+        break;
+      case UpdateOperator.REPLACE:
+        cell.DataType = new EnumValue<CellValues>(CellValues.String);
+        cell.CellValue = new CellValue(oldValue?.Replace(newValue ?? string.Empty, string.Empty) ?? string.Empty);
         break;
       default:
         throw new ArgumentOutOfRangeException(nameof(queryOperator), queryOperator, null);

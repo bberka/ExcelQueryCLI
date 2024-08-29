@@ -13,5 +13,7 @@ public enum FilterOperator
   STARTS_WITH,
   ENDS_WITH,
   IN,
-  BETWEEN
+  NOT_IN,
+  BETWEEN,
+  NOT_BETWEEN,
 }

@@ -6,5 +6,9 @@ public enum UpdateOperator
   MULTIPLY,
   DIVIDE,
   ADD,
-  SUBTRACT
+  SUBTRACT,
+  APPEND,
+  PREPEND,
+  REPLACE,
+  
 }
