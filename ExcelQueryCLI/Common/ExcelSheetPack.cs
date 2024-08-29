@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml;
+﻿using System.Globalization;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using ExcelQueryCLI.Parsers;
@@ -184,13 +185,13 @@ public sealed class ExcelSheetPack
       case FilterOperator.NOT_EQUALS:
         return cellFilterValue != matchFilterValue;
       case FilterOperator.GREATER_THAN:
-        return double.TryParse(cellFilterValue, out var cellValue1) && double.TryParse(matchFilterValue, out var matchValue1) && cellValue1 > matchValue1;
+        return double.TryParse(cellFilterValue, out var cellValue1) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue1) && cellValue1 > matchValue1;
       case FilterOperator.LESS_THAN:
-        return double.TryParse(cellFilterValue, out var cellValue2) && double.TryParse(matchFilterValue, out var matchValue2) && cellValue2 < matchValue2;
+        return double.TryParse(cellFilterValue, out var cellValue2) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue2) && cellValue2 < matchValue2;
       case FilterOperator.GREATER_THAN_OR_EQUAL:
-        return double.TryParse(cellFilterValue, out var cellValue3) && double.TryParse(matchFilterValue, out var matchValue3) && cellValue3 >= matchValue3;
+        return double.TryParse(cellFilterValue, out var cellValue3) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue3) && cellValue3 >= matchValue3;
       case FilterOperator.LESS_THAN_OR_EQUAL:
-        return double.TryParse(cellFilterValue, out var cellValue4) && double.TryParse(matchFilterValue, out var matchValue4) && cellValue4 <= matchValue4;
+        return double.TryParse(cellFilterValue, out var cellValue4) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue4) && cellValue4 <= matchValue4;
       case FilterOperator.CONTAINS:
         return cellFilterValue.Contains(matchFilterValue);
       case FilterOperator.NOT_CONTAINS:
@@ -207,9 +208,9 @@ public sealed class ExcelSheetPack
           return false;
         }
 
-        return double.TryParse(cellFilterValue, out var cellValue5) &&
-               double.TryParse(values[0], out var matchValue5) &&
-               double.TryParse(values[1], out var matchValue6) &&
+        return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture,out var cellValue5) &&
+               double.TryParse(values[0], CultureInfo.InvariantCulture,out var matchValue5) &&
+               double.TryParse(values[1], CultureInfo.InvariantCulture,out var matchValue6) &&
                cellValue5 >= matchValue5 &&
                cellValue5 <= matchValue6;
       default:
@@ -270,12 +271,12 @@ public sealed class ExcelSheetPack
     double? parsedOldValue = null;
     double? parsedNewValue = null;
     if (isRequiredToParse) {
-      if (!double.TryParse(oldValue, out var oldValueDouble)) {
+      if (!double.TryParse(oldValue, CultureInfo.InvariantCulture,out var oldValueDouble)) {
         Log.Verbose("UpdateCellValue::Failed to parse old value: {oldValue}", oldValue);
         return;
       }
 
-      if (!double.TryParse(newValue, out var newValueDouble)) {
+      if (!double.TryParse(newValue, CultureInfo.InvariantCulture,out var newValueDouble)) {
         Log.Verbose("UpdateCellValue::Failed to parse new value: {newValue}", newValue);
         return;
       }
