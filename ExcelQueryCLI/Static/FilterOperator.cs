@@ -12,8 +12,6 @@ public enum FilterOperator
   NOT_CONTAINS,
   STARTS_WITH,
   ENDS_WITH,
-  IN,
-  NOT_IN,
   BETWEEN,
   NOT_BETWEEN,
 }

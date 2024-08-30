@@ -1,24 +1,23 @@
 ﻿using System.Text.RegularExpressions;
 using ExcelQueryCLI.Static;
 
-namespace ExcelQueryCLI.Parsers;
-
 /// <summary>
-/// Example: "('ItemName' OR 'ItemKey') EQUALS 'MyTestValue'"
-/// Example: "('ItemName') EQUALS 'MyTestValue'"
+/// Example: "('ItemName' OR 'ItemKey') EQUALS ('MyTestValue' OR 'XSDe' OR 'DdwTest')"
+/// Example: "('ItemName') EQUALS ('MyTestValue')"
+/// Example: "('^Index' OR 'ItemType') EQUALS ('800001')"
 /// </summary>
 public sealed class FilterQueryParser
 {
   private readonly string _query;
 
   public List<string> Columns { get; private set; }
-  public string Value { get; private set; }
+  public List<string> Values { get; private set; }
   public FilterOperator Operator { get; private set; }
 
   private static readonly string EnumPattern = string.Join("|", Enum.GetNames(typeof(FilterOperator)));
 
   private static readonly Regex QueryRegex = new(
-                                                 @"^\((?<columns>.+?)\)\s+(?<operator>" + EnumPattern + @")\s+'(?<value>.+?)'$",
+                                                 @"^\((?<columns>.+?)\)\s+(?<operator>" + EnumPattern + @")\s+\((?<values>.+?)\)$",
                                                  RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
   public FilterQueryParser(string query) {
@@ -34,7 +33,11 @@ public sealed class FilterQueryParser
     Columns = columnsRaw.Select(c => c.Trim().Trim('\'')).ToList();
 
     var operatorStr = match.Groups["operator"].Value.Trim().ToUpper();
-    Value = match.Groups["value"].Value.Trim('\'');
+    var valuesRaw = match.Groups["values"].Value;
+
+    // Split the values by " OR " and trim single quotes
+    var valuesInside = valuesRaw.Split(new[] { " OR " }, StringSplitOptions.RemoveEmptyEntries);
+    Values = valuesInside.Select(v => v.Trim().Trim('\'')).ToList();
 
     if (!Enum.TryParse<FilterOperator>(operatorStr, out var filterOperator)) {
       throw new ArgumentException($"Invalid operator: {operatorStr}");
@@ -44,6 +47,10 @@ public sealed class FilterQueryParser
 
     if (Columns.Count == 0) {
       throw new ArgumentException("No valid column names provided.");
+    }
+
+    if (Values.Count == 0) {
+      throw new ArgumentException("No valid values provided.");
     }
   }
 }

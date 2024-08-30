@@ -17,13 +17,12 @@ args = [
   "update",
   "-f", "D:\\DataSheet_ItemDataTable_Bartar.xlsm",
   "-s", "Item_Table",
-  "--filter-query", "'^Index' EQUALS '800001'",
-  "--filter-query", "'^Index' EQUALS '800002'",
-  "--filter-query", "'^Index' EQUALS '800004'",
-  "--filter-query", "'^Index' EQUALS '800014'",
-  "--filter-query", "'^Index' EQUALS '800034'",
+  // "--filter-query", "('^Index' OR 'ItemType') EQUALS '800001'",
+  // "--filter-query", "('^Index' OR 'ItemType') EQUALS ('800001')",
+  "--filter-query", "('^Index' OR 'ItemType') EQUALS ('800001' OR '800002' OR '800005')",
+  // "--filter-query", "('^Index' OR 'ItemType') EQUALS '800001' OR '800002'",
   "--set-query", "'~ItemName' SET 'WORKS?'",
-  "--set-query", "'ItemType' SET 'XXX'"
+  // "--set-query", "'ItemType' SET 'XXX'"
 ];
 
 // args = [

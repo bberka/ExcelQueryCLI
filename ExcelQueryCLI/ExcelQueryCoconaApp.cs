@@ -34,12 +34,6 @@ public sealed class ExcelQueryCoconaApp
     try {
       var reader = new ExcelSheetPack(file, sheet);
       var result = reader.UpdateQuery(fqParsed, sqParsed, onlyFirst);
-      if (result.Item1) {
-        Log.Information("Update successful: {Message}", result.Item2);
-      }
-      else {
-        Log.Error("Update failed: {Message}", result.Item2);
-      }
     }
     catch (Exception ex) {
       Log.Error("Error updating Excel file: {Message}", ex.Message);
@@ -83,10 +77,10 @@ public sealed class ExcelQueryCoconaApp
     try {
       foreach (var query in filterQueryString) {
         var parsed = new FilterQueryParser(query);
-        Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
+        Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Values}",
                         parsed.Columns,
                         parsed.Operator,
-                        parsed.Value);
+                        parsed.Values);
         fqParsed.Add(parsed);
       }
 

@@ -150,10 +150,10 @@ public sealed class ExcelSheetPack
 
   public Tuple<bool, string> UpdateQuery(List<FilterQueryParser> filterQueries, List<SetQueryParser> setQueries, bool onlyFirst) {
     foreach (var filterQuery in filterQueries) {
-      Log.Information("Parsed Filter Query: Column: {Columns}, Operator: {Operator}, Value: {Value}",
+      Log.Information("Parsed Filter Query: Column: {Columns}, Operator: {Operator}, Value: {Values}",
                       filterQuery.Columns,
                       filterQuery.Operator,
-                      filterQuery.Value);
+                      filterQuery.Values);
     }
 
     foreach (var query in setQueries) {
@@ -228,33 +228,36 @@ public sealed class ExcelSheetPack
         foreach (var kpFilterQuery in filterQueryColumnIndexTuple) { //each --filter-query param
           var filterQuery = kpFilterQuery.Item2;
           foreach (var filterColumnIndex in kpFilterQuery.Item1) { //each column in filter query param
-            var filterCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
-            if (filterCell == null) {
+            var filterCheckCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
+            if (filterCheckCell == null) {
               Log.Verbose("UpdateQuery::Cell not found, skipping row.");
               continue;
             }
-            var filterValue = GetCellValue(document, filterCell);
-            var checkFilterResult = CheckFilter(filterValue, filterQuery.Value, filterQuery.Operator);
-            if (!checkFilterResult) continue;
-            foreach (var kpSetQuery in setQueryColumnIndexDict) {
-              var setQuery = kpSetQuery.Value;
-              var index = kpSetQuery.Key;
-              var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
-              if (setCell == null) {
-                Log.Verbose("UpdateQuery::Cell not found, skipping row.");
-                continue;
-              }
+            var filterCheckColumnValue = GetCellValue(document, filterCheckCell);
+            foreach (var filterValue in filterQuery.Values) {
+              var checkFilterResult = CheckFilter(filterCheckColumnValue, filterValue, filterQuery.Operator);
+              if (!checkFilterResult) continue;
+              foreach (var kpSetQuery in setQueryColumnIndexDict) {
+                var setQuery = kpSetQuery.Value;
+                var index = kpSetQuery.Key;
+                var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
+                if (setCell == null) {
+                  Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+                  continue;
+                }
 
-              var setCellValue = GetCellValue(document, setCell);
-              UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
-              updatedCells++;
-              isRowUpdated = true;
-              Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
-              if (onlyFirst) {
-                Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
-                break;
+                var setCellValue = GetCellValue(document, setCell);
+                UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
+                updatedCells++;
+                isRowUpdated = true;
+                Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
+                if (onlyFirst) {
+                  Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
+                  break;
+                }
               }
             }
+
           }
         }
         if (isRowUpdated) {
@@ -309,21 +312,16 @@ public sealed class ExcelSheetPack
         return cellFilterValue.StartsWith(matchFilterValue);
       case FilterOperator.ENDS_WITH:
         return cellFilterValue.EndsWith(matchFilterValue);
-      case FilterOperator.IN:
-        return matchFilterValue.Split("|").Any(x => x.Trim() == cellFilterValue);
       case FilterOperator.BETWEEN:
-        var values = matchFilterValue.Split("|");
+        var values = matchFilterValue.Split("<>");
         if (values.Length != 2) {
           return false;
         }
-
         return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture, out var cellValue5) &&
                double.TryParse(values[0], CultureInfo.InvariantCulture, out var matchValue5) &&
                double.TryParse(values[1], CultureInfo.InvariantCulture, out var matchValue6) &&
                cellValue5 >= matchValue5 &&
                cellValue5 <= matchValue6;
-      case FilterOperator.NOT_IN:
-        return matchFilterValue.Split("|").All(x => x.Trim() != cellFilterValue);
       case FilterOperator.NOT_BETWEEN:
         var values2 = matchFilterValue.Split("|");
         if (values2.Length != 2) {
