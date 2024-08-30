@@ -10,6 +10,11 @@ ExcelQueryCLI is a command line tool that allows you to query Excel files using 
 
 Download the latest release from github and extract the zip file
 
+## Warning
+This app still in early development and may contain bugs. Please use it with caution.
+
+Syntax for querying might change with future updates
+
 ## Query
 
 Simple query language contains 3 important values :
@@ -19,10 +24,11 @@ Simple query language contains 3 important values :
 - Value
 
 ```bash
-"'<column-name>' <operator> '<value>'"
+"('<column-name>') <operator> ('<value>')"
+"('<column-name>' OR '<column-name>') <operator> ('<value>' OR '<value>')"
 ```
 
-**Note:** The column name and value should be enclosed in single quotes
+The column name and value should be enclosed in single quotes and parenthesis like in the example above~~~~
 
 ### Query Types
 
@@ -113,12 +119,14 @@ Providing multiple set query parameters will update the rows for all matching ro
 Currently filter query only supports OR operation 
 ### Example
 
+**Simple query**
 ```bash
-ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name') EQUALS ('John Doe')" --set-query "'Age' SET '30'"
+ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name') EQUALS ('John Doe')" --set-query "('Age') SET ('30')"
 ```
 
+**Complex query**
 ```bash
-ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name' OR 'Surname' OR 'Fullname') NOT_EQUALS ('John' OR 'Mark' OR 'Justin')" --set-query "'Age' MULTIPLY '2'"
+ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name' OR 'Surname' OR 'Fullname') NOT_EQUALS ('John' OR 'Mark' OR 'Justin')" --set-query "('Age') SET ('30')" --set-query "('UserPermission') SET ('3')"
 ```
 
 ## License
