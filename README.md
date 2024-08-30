@@ -106,11 +106,14 @@ ExcelQueryCLI.exe update -f <file> -s <sheet> --filter-query <filter-query> --se
 
 ### Parameters
 
-- `-f` or `--file` : The path to the excel file
-- `-s` or `--sheet` : The name of the sheet in the excel file
+- `-f` or `--file` <span style="color: red;">*</span>: The path to the excel file
+- `-s` or `--sheet` <span style="color: red;">*</span>: The name of the sheet in the excel file
 - `--filter-query` : The filter query to filter the rows to be updated
-- `--set-query` : The set query to update the rows
+- `--set-query`<span style="color: red;">*</span>: The set query to update the rows
 - `--only-first` : If set, only the first row that matches the filter query will be updated
+- `--header-row-index` : The index of the header row in the sheet. Default is 1
+
+If no filter query is provided, all rows in the sheet will be updated
 
 Providing multiple filter query parameters will be treated as an OR operation meaning any of the filter query parameters will be applied to the rows
 
