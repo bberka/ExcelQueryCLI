@@ -41,14 +41,11 @@ Simple query language contains 3 important values :
 - `NOT_CONTAINS` : Not contains operator
 - `STARTS_WITH` : Starts with operator
 - `ENDS_WITH` : Ends with operator
-- `IN` : In operator
-- `NOT_IN` : Not in operator
 - `BETWEEN` : Between operator
 - `NOT_BETWEEN` : Not between operator
 
-IN, NOT_IN, BETWEEN and NOT_BETWEEN operators require the values to be a list of values separated by (|) pipe
-character
-
+BETWEEN and NOT_BETWEEN operators require the values to be a list of values separated by (<>)
+ 
 ### Set Query Operators
 
 - `SET` : Set operator
@@ -111,16 +108,17 @@ ExcelQueryCLI.exe update -f <file> -s <sheet> --filter-query <filter-query> --se
 
 Providing multiple filter query parameters will be treated as an OR operation meaning any of the filter query parameters will be applied to the rows
 
-Providing multiple set query parameters will be treated as an AND operation meaning all the set query parameters will be applied to the rows that match the filter query
+Providing multiple set query parameters will update the rows for all matching rows by filter query
 
+Currently filter query only supports OR operation 
 ### Example
 
 ```bash
-ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "'Name' EQUALS 'John Doe'" --set-query "'Age' SET '30'"
+ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name') EQUALS ('John Doe')" --set-query "'Age' SET '30'"
 ```
 
 ```bash
-ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "'Name' IN 'John|Mark|Justin'" --set-query "'Age' MULTIPLY '2'"
+ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name' OR 'Surname' OR 'Fullname') NOT_EQUALS ('John' OR 'Mark' OR 'Justin')" --set-query "'Age' MULTIPLY '2'"
 ```
 
 ## License
