@@ -11,19 +11,25 @@ namespace ExcelQueryCLI.Common;
 
 public sealed class ExcelSheetPack
 {
-  private readonly string _filePath;
-  private readonly string _sheetName;
+  public uint HeaderRowIndex { get; private set; }
+  public string SheetName { get; private set; }
+  public string FilePath { get; private set; }
 
-  public ExcelSheetPack(string filePath, string sheetName) {
-    _filePath = filePath;
-    _sheetName = sheetName;
+  public ExcelSheetPack(string filePath, string sheetName, uint headerRowIndex) {
+    FilePath = filePath;
+    SheetName = sheetName;
+    HeaderRowIndex = headerRowIndex;
+    if (HeaderRowIndex == 0) {
+      Log.Warning("Header row index cannot be 0, setting to 1.");
+      HeaderRowIndex = 1;
+    }
 
-    if (!File.Exists(_filePath)) {
-      Log.Error("File not found: {file}", _filePath);
+    if (!File.Exists(FilePath)) {
+      Log.Error("File not found: {file}", FilePath);
       return;
     }
 
-    Log.Information("ExcelQueryCLI: {file} {sheet}", _filePath, _sheetName);
+    Log.Information("ExcelQueryCLI: {file} {sheet}", FilePath, SheetName);
   }
 
 
@@ -148,12 +154,17 @@ public sealed class ExcelSheetPack
   //   return columnPart + updatedRowIndex; // Return the updated cell reference
   // }
 
-  public Tuple<bool, string> UpdateQuery(List<FilterQueryParser> filterQueries, List<SetQueryParser> setQueries, bool onlyFirst) {
-    foreach (var filterQuery in filterQueries) {
-      Log.Information("Parsed Filter Query: Column: {Columns}, Operator: {Operator}, Value: {Values}",
-                      filterQuery.Columns,
-                      filterQuery.Operator,
-                      filterQuery.Values);
+  public Tuple<bool, string> UpdateQuery(List<FilterQueryParser>? filterQueries, List<SetQueryParser> setQueries, bool onlyFirst) {
+    if (filterQueries is null) {
+      Log.Information("No filter query provided.");
+    }
+    else {
+      foreach (var filterQuery in filterQueries) {
+        Log.Information("Parsed Filter Query: Column: {Columns}, Operator: {Operator}, Value: {Values}",
+                        filterQuery.Columns,
+                        filterQuery.Operator,
+                        filterQuery.Values);
+      }
     }
 
     foreach (var query in setQueries) {
@@ -164,7 +175,7 @@ public sealed class ExcelSheetPack
     }
 
     try {
-      using var document = SpreadsheetDocument.Open(_filePath, true);
+      using var document = SpreadsheetDocument.Open(FilePath, true);
 
       if (document.WorkbookPart is null) {
         return new Tuple<bool, string>(false, "Error opening Excel file");
@@ -174,44 +185,47 @@ public sealed class ExcelSheetPack
         return new Tuple<bool, string>(false, "No sheets found in Excel file");
       }
 
-      var worksheetPart = GetWorksheetPartByName(document.WorkbookPart, _sheetName);
+      var worksheetPart = GetWorksheetPartByName(document.WorkbookPart, SheetName);
       var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
       if (sheetData is null) {
         return new Tuple<bool, string>(false, "No data found in Excel file");
       }
 
-      var filterQueryColumnIndexTuple = new List<Tuple<List<int>, FilterQueryParser>>();
-      foreach (var filterQuery in filterQueries) {
-        var indexes = new List<int>();
-        foreach (var col in filterQuery.Columns) {
-          var filterColumnIndex = GetColumnIndex(document, worksheetPart, col);
-          if (filterColumnIndex == -1) {
-            Log.Warning("Filter column {filterQuery.Column} not found.", col);
+      List<Tuple<List<int>, FilterQueryParser>>? filterQueryColumnIndexTuple = null;
+      if (filterQueries is not null) {
+        filterQueryColumnIndexTuple = new List<Tuple<List<int>, FilterQueryParser>>();
+        foreach (var filterQuery in filterQueries) {
+          var indexes = new List<int>();
+          foreach (var col in filterQuery.Columns) {
+            var filterColumnIndex = GetColumnIndex(document, worksheetPart, col);
+            if (filterColumnIndex == -1) {
+              Log.Warning("Filter column {filterQuery.Column} not found.", col);
+              continue;
+            }
+
+            indexes.Add(filterColumnIndex);
+          }
+
+          if (indexes.Count == 0) {
+            Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Columns);
             continue;
           }
-          
-          indexes.Add(filterColumnIndex);
-        }
 
-        if (indexes.Count == 0) {
-          Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Columns);
-          continue;
+          filterQueryColumnIndexTuple.Add(new Tuple<List<int>, FilterQueryParser>(indexes, filterQuery));
         }
-
-        filterQueryColumnIndexTuple.Add(new Tuple<List<int>, FilterQueryParser>(indexes, filterQuery));
       }
 
       var setQueryColumnIndexDict = new Dictionary<int, SetQueryParser>();
       foreach (var setQuery in setQueries) {
         var setColumnIndex = GetColumnIndex(document, worksheetPart, setQuery.Column);
         if (setColumnIndex == -1) {
-          Log.Warning("Set column {setQuery.Column} not found.", setQuery.Column);
+          Log.Warning("Set query column {Column} not found.", setQuery.Column);
           continue;
         }
 
         var exists = setQueryColumnIndexDict.TryAdd(setColumnIndex, setQuery);
         if (!exists) {
-          Log.Warning("Set column {setQuery.Column} already exists.", setQuery.Column);
+          Log.Warning("Set query column {Column} already exists.", setQuery.Column);
           continue;
         }
       }
@@ -223,43 +237,81 @@ public sealed class ExcelSheetPack
 
       var updatedCells = 0;
       var updatedRows = 0;
-      foreach (var row in sheetData.Elements<Row>()) {//each row
+      foreach (var row in sheetData.Elements<Row>()) {
+        //each row
         var isRowUpdated = false;
-        foreach (var kpFilterQuery in filterQueryColumnIndexTuple) { //each --filter-query param
-          var filterQuery = kpFilterQuery.Item2;
-          foreach (var filterColumnIndex in kpFilterQuery.Item1) { //each column in filter query param
-            var filterCheckCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
-            if (filterCheckCell == null) {
-              Log.Verbose("UpdateQuery::Cell not found, skipping row.");
-              continue;
-            }
-            var filterCheckColumnValue = GetCellValue(document, filterCheckCell);
-            foreach (var filterValue in filterQuery.Values) {
-              var checkFilterResult = CheckFilter(filterCheckColumnValue, filterValue, filterQuery.Operator);
-              if (!checkFilterResult) continue;
-              foreach (var kpSetQuery in setQueryColumnIndexDict) {
-                var setQuery = kpSetQuery.Value;
-                var index = kpSetQuery.Key;
-                var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
-                if (setCell == null) {
-                  Log.Verbose("UpdateQuery::Cell not found, skipping row.");
-                  continue;
-                }
+        if (row.RowIndex is null) {
+          continue;
+        }
 
-                var setCellValue = GetCellValue(document, setCell);
-                UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
-                updatedCells++;
-                isRowUpdated = true;
-                Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
-                if (onlyFirst) {
-                  Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
-                  break;
+        var isHeaderRow = row.RowIndex == HeaderRowIndex;
+        if (isHeaderRow) {
+          Log.Verbose("UpdateQuery::Skipping header row.");
+          continue;
+        }
+
+        if (filterQueryColumnIndexTuple is not null) {
+          foreach (var kpFilterQuery in filterQueryColumnIndexTuple) {
+            //each --filter-query param
+            var filterQuery = kpFilterQuery.Item2;
+            foreach (var filterColumnIndex in kpFilterQuery.Item1) {
+              //each column in filter query param
+              var filterCheckCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
+              if (filterCheckCell == null) {
+                Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+                continue;
+              }
+
+              var filterCheckColumnValue = GetCellValue(document, filterCheckCell);
+              foreach (var filterValue in filterQuery.Values) {
+                var checkFilterResult = CheckFilter(filterCheckColumnValue, filterValue, filterQuery.Operator);
+                if (!checkFilterResult) continue;
+                foreach (var kpSetQuery in setQueryColumnIndexDict) {
+                  var setQuery = kpSetQuery.Value;
+                  var index = kpSetQuery.Key;
+                  var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
+                  if (setCell == null) {
+                    Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+                    continue;
+                  }
+
+                  var setCellValue = GetCellValue(document, setCell);
+                  UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
+                  updatedCells++;
+                  isRowUpdated = true;
+                  Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
+                  if (onlyFirst) {
+                    Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
+                    break;
+                  }
                 }
               }
             }
-
           }
         }
+        else {
+          //Update without filter meaning update all rows
+          foreach (var kpSetQuery in setQueryColumnIndexDict) {
+            var setQuery = kpSetQuery.Value;
+            var index = kpSetQuery.Key;
+            var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
+            if (setCell == null) {
+              Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+              continue;
+            }
+
+            var setCellValue = GetCellValue(document, setCell);
+            UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
+            updatedCells++;
+            isRowUpdated = true;
+            Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
+            if (onlyFirst) {
+              Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
+              break;
+            }
+          }
+        }
+
         if (isRowUpdated) {
           updatedRows++;
         }
@@ -317,6 +369,7 @@ public sealed class ExcelSheetPack
         if (values.Length != 2) {
           return false;
         }
+
         return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture, out var cellValue5) &&
                double.TryParse(values[0], CultureInfo.InvariantCulture, out var matchValue5) &&
                double.TryParse(values[1], CultureInfo.InvariantCulture, out var matchValue6) &&
@@ -340,15 +393,14 @@ public sealed class ExcelSheetPack
 
 
   private int GetColumnIndex(SpreadsheetDocument document, WorksheetPart worksheetPart, string columnName) {
-    // Assuming the first row contains headers
-    var headerRow = worksheetPart.Worksheet.GetFirstChild<SheetData>()?.Elements<Row>().FirstOrDefault();
-    if (headerRow == null) {
+    var headerRowByIndex = worksheetPart.Worksheet.GetFirstChild<SheetData>()?.Elements<Row>().ElementAtOrDefault((int)(HeaderRowIndex - 1));
+    if (headerRowByIndex == null) {
       Log.Verbose("GetColumnIndex::No header row found.");
       return -1;
     }
 
-    for (var i = 0; i < headerRow.Elements<Cell>().Count(); i++) {
-      var cell = headerRow.Elements<Cell>().ElementAt(i);
+    for (var i = 0; i < headerRowByIndex.Elements<Cell>().Count(); i++) {
+      var cell = headerRowByIndex.Elements<Cell>().ElementAt(i);
       var headerName = GetCellValue(document, cell);
       if (headerName is null) {
         continue;

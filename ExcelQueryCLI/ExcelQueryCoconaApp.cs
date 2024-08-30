@@ -14,25 +14,23 @@ public sealed class ExcelQueryCoconaApp
     [Option("sheet", ['s'], Description = "Sheet name")]
     string sheet,
     [Option("filter-query", Description = "Filter query string")]
-    string[] filterQueryString,
+    string[]? filterQueryString,
     [Option("set-query", Description = "Set query string")]
     string[] setQueryString,
     [Option("only-first", Description = "Whether to update only the first matching row")]
-    bool onlyFirst = false
+    bool onlyFirst = false,
+    [Option("header-row-index", Description = "Header row index")]
+    uint headerRowIndex = 1
   ) {
     Log.Information("ExcelQueryCLI.Update: {file} {sheet} {filterQuery} {setQuery}", file, sheet, filterQueryString, setQueryString);
     var fqParsed = ParseFilterQuery(filterQueryString);
-    if (fqParsed is null) {
-      return;
-    }
-
     var sqParsed = ParseSetQuery(setQueryString);
     if (sqParsed is null) {
       return;
     }
 
     try {
-      var reader = new ExcelSheetPack(file, sheet);
+      var reader = new ExcelSheetPack(file, sheet,headerRowIndex);
       var result = reader.UpdateQuery(fqParsed, sqParsed, onlyFirst);
     }
     catch (Exception ex) {
@@ -72,7 +70,11 @@ public sealed class ExcelQueryCoconaApp
   //   }
   // }
 
-  private static List<FilterQueryParser>? ParseFilterQuery(string[] filterQueryString) {
+  private static List<FilterQueryParser>? ParseFilterQuery(string[]? filterQueryString) {
+    if (filterQueryString is null) {
+      return null;
+    }
+
     List<FilterQueryParser> fqParsed = [];
     try {
       foreach (var query in filterQueryString) {
@@ -82,11 +84,6 @@ public sealed class ExcelQueryCoconaApp
                         parsed.Operator,
                         parsed.Values);
         fqParsed.Add(parsed);
-      }
-
-      if (fqParsed.Count == 0) {
-        Log.Error("No filter query provided.");
-        return null;
       }
     }
     catch (FormatException ex) {
