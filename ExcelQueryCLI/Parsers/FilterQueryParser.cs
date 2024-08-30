@@ -4,32 +4,35 @@ using ExcelQueryCLI.Static;
 namespace ExcelQueryCLI.Parsers;
 
 /// <summary>
-/// Example: 'Item Identity Number' EQUALS '12334 1XXD2'
+/// Example: "('ItemName' OR 'ItemKey') EQUALS 'MyTestValue'"
+/// Example: "('ItemName') EQUALS 'MyTestValue'"
 /// </summary>
 public sealed class FilterQueryParser
 {
   private readonly string _query;
 
-  public string Column { get; private set; }
+  public List<string> Columns { get; private set; }
   public string Value { get; private set; }
   public FilterOperator Operator { get; private set; }
 
   private static readonly string EnumPattern = string.Join("|", Enum.GetNames(typeof(FilterOperator)));
 
   private static readonly Regex QueryRegex = new(
-                                                 @"^(?<column>.+?)\s+(?<operator>" + EnumPattern + @")\s+'(?<value>.+?)'$",
+                                                 @"^\((?<columns>.+?)\)\s+(?<operator>" + EnumPattern + @")\s+'(?<value>.+?)'$",
                                                  RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
   public FilterQueryParser(string query) {
     _query = query ?? throw new ArgumentNullException(nameof(query));
-    //'Item Identity Number' EQUALS '12334 1XXD2'
 
     var match = QueryRegex.Match(_query);
     if (!match.Success) {
       throw new FormatException("Query format is invalid.");
     }
 
-    Column = match.Groups["column"].Value.Trim('\'');
+    // Split the columns by " OR " and trim single quotes
+    var columnsRaw = match.Groups["columns"].Value.Split(new[] { " OR " }, StringSplitOptions.RemoveEmptyEntries);
+    Columns = columnsRaw.Select(c => c.Trim().Trim('\'')).ToList();
+
     var operatorStr = match.Groups["operator"].Value.Trim().ToUpper();
     Value = match.Groups["value"].Value.Trim('\'');
 
@@ -38,8 +41,9 @@ public sealed class FilterQueryParser
     }
 
     Operator = filterOperator;
-    if (string.IsNullOrEmpty(Column)) {
-      throw new ArgumentException("Column name is empty.");
+
+    if (Columns.Count == 0) {
+      throw new ArgumentException("No valid column names provided.");
     }
   }
 }

@@ -84,7 +84,7 @@ public sealed class ExcelQueryCoconaApp
       foreach (var query in filterQueryString) {
         var parsed = new FilterQueryParser(query);
         Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
-                        parsed.Column,
+                        parsed.Columns,
                         parsed.Operator,
                         parsed.Value);
         fqParsed.Add(parsed);
