@@ -27,71 +27,126 @@ public sealed class ExcelSheetPack
   }
 
 
-  public Tuple<bool, string> DeleteQuery(FilterQueryParser filterQuery, bool onlyFirst) {
-    Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
-                    filterQuery.Column,
-                    filterQuery.Operator,
-                    filterQuery.Value);
-    try {
-      using var document = SpreadsheetDocument.Open(_filePath, true);
-
-      if (document.WorkbookPart is null) {
-        return new Tuple<bool, string>(false, "Error opening Excel file");
-      }
-
-      if (document.WorkbookPart.Workbook.Sheets is null) {
-        return new Tuple<bool, string>(false, "No sheets found in Excel file");
-      }
-
-      var worksheetPart = GetWorksheetPartByName(document.WorkbookPart, _sheetName);
-      var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
-      if (sheetData is null) {
-        return new Tuple<bool, string>(false, "No data found in Excel file");
-      }
-
-      var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
-      if (filterColumnIndex == -1) {
-        return new Tuple<bool, string>(false, $"Filter column {filterQuery.Column} not found.");
-      }
-
-
-      var deleted = 0;
-      foreach (var row in sheetData.Elements<Row>()) {
-        var filterCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
-        if (filterCell == null) {
-          Log.Verbose("DeleteQuery::Cell not found, skipping row.");
-          continue;
-        }
-
-        var filterValue = GetCellValue(document, filterCell);
-        var checkFilterResult = CheckFilter(filterValue, filterQuery.Value, filterQuery.Operator);
-        if (checkFilterResult) {
-          sheetData.RemoveChild(row);
-          deleted++;
-          Log.Verbose("UpdateQuery::Row deleted: {row}", row.RowIndex);
-          if (onlyFirst) {
-            Log.Verbose("UpdateQuery::Only deleting the first matching row, breaking out of loop.");
-            break;
-          }
-        }
-      }
-
-      worksheetPart.Worksheet.Save();
-
-      if (deleted > 0) {
-        Log.Information("Rows deleted: {updated}", deleted);
-        return new Tuple<bool, string>(true, $"Rows deleted: {deleted}");
-      }
-
-      Log.Information("No rows deleted.");
-      return new Tuple<bool, string>(false, "No rows deleted.");
-    }
-    catch (Exception ex) {
-      Log.Error("Error updating Excel file: {Message}", ex.Message);
-      return new Tuple<bool, string>(false, "Error deleting Excel file.");
-    }
-  }
-
+  // public Tuple<bool, string> DeleteQuery(List<FilterQueryParser> filterQueries, bool onlyFirst) {
+  //   foreach (var filterQuery in filterQueries) {
+  //     Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
+  //                     filterQuery.Column,
+  //                     filterQuery.Operator,
+  //                     filterQuery.Value);
+  //   }
+  //
+  //
+  //   try {
+  //     using var document = SpreadsheetDocument.Open(_filePath, true);
+  //
+  //     if (document.WorkbookPart is null) {
+  //       return new Tuple<bool, string>(false, "Error opening Excel file");
+  //     }
+  //
+  //     if (document.WorkbookPart.Workbook.Sheets is null) {
+  //       return new Tuple<bool, string>(false, "No sheets found in Excel file");
+  //     }
+  //
+  //     var worksheetPart = GetWorksheetPartByName(document.WorkbookPart, _sheetName);
+  //     var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();
+  //     if (sheetData is null) {
+  //       return new Tuple<bool, string>(false, "No data found in Excel file");
+  //     }
+  //
+  //
+  //     var filterQueryColumnIndexTuple = new List<Tuple<int, FilterQueryParser>>();
+  //     foreach (var filterQuery in filterQueries) {
+  //       var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
+  //       if (filterColumnIndex == -1) {
+  //         Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Column);
+  //         continue;
+  //       }
+  //
+  //       filterQueryColumnIndexTuple.Add(new Tuple<int, FilterQueryParser>(filterColumnIndex, filterQuery));
+  //     }
+  //
+  //
+  //     var deleted = 0;
+  //     var rows = sheetData.Elements<Row>().ToList();
+  //     foreach (var row in rows) {
+  //       foreach (var kpFilterQuery in filterQueryColumnIndexTuple) {
+  //         var filterQuery = kpFilterQuery.Item2;
+  //         var filterColumnIndex = kpFilterQuery.Item1;
+  //         var filterCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
+  //         if (filterCell == null) {
+  //           Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+  //           continue;
+  //         }
+  //
+  //         var filterValue = GetCellValue(document, filterCell);
+  //         var checkFilterResult = CheckFilter(filterValue, filterQuery.Value, filterQuery.Operator);
+  //         if (!checkFilterResult) continue;
+  //         var rowIndex = row.RowIndex;
+  //         if (rowIndex is null) {
+  //           continue;
+  //         }
+  //
+  //         DeleteRow(worksheetPart, sheetData, rowIndex);
+  //         deleted++;
+  //         Log.Verbose("UpdateQuery::Row deleted: {row}", row.RowIndex);
+  //         if (onlyFirst) {
+  //           Log.Verbose("UpdateQuery::Only deleting the first matching row, breaking out of loop.");
+  //           break;
+  //         }
+  //       }
+  //     }
+  //
+  //     worksheetPart.Worksheet.Save();
+  //
+  //     if (deleted > 0) {
+  //       Log.Information("Rows deleted: {updated}", deleted);
+  //       return new Tuple<bool, string>(true, $"Rows deleted: {deleted}");
+  //     }
+  //
+  //     Log.Information("No rows deleted.");
+  //     return new Tuple<bool, string>(false, "No rows deleted.");
+  //   }
+  //   catch (Exception ex) {
+  //     Log.Error("Error updating Excel file: {Message}", ex.Message);
+  //     return new Tuple<bool, string>(false, "Error deleting Excel file.");
+  //   }
+  // }
+  //
+  // public void DeleteRow(WorksheetPart worksheetPart, SheetData sheetData, uint rowIndex) {
+  //   // Find the row to delete
+  //   var rowToDelete = sheetData.Elements<Row>().FirstOrDefault(r => r.RowIndex.HasValue && r.RowIndex.Value == rowIndex);
+  //   if (rowToDelete == null) return;
+  //
+  //   // Remove the row
+  //   sheetData.RemoveChild(rowToDelete);
+  //
+  //   // Update the RowIndex of the rows below
+  //   foreach (var row in sheetData.Elements<Row>().Where(r => r.RowIndex.HasValue && r.RowIndex.Value > rowIndex)) {
+  //     row.RowIndex--; // Decrement the row index
+  //   }
+  //
+  //   // Update cell references for cells in rows below the deleted row
+  //   foreach (var row in sheetData.Elements<Row>().Where(r => r.RowIndex.HasValue && r.RowIndex.Value > rowIndex)) {
+  //     foreach (var cell in row.Elements<Cell>()) {
+  //       // Update the cell reference
+  //       cell.CellReference = UpdateCellReference(cell.CellReference, -1);
+  //     }
+  //   }
+  //
+  //   // Save changes
+  //   worksheetPart.Worksheet.Save();
+  // }
+  // private string UpdateCellReference(string cellReference, int rowOffset) {
+  //   // Extract the column part and row part from the cell reference
+  //   var columnPart = new string(cellReference.Where(char.IsLetter).ToArray());
+  //   var rowPart = new string(cellReference.Where(char.IsDigit).ToArray());
+  //
+  //   // Parse the row number and apply the offset
+  //   var rowIndex = uint.Parse(rowPart);
+  //   var updatedRowIndex = rowIndex + (uint)rowOffset;
+  //
+  //   return columnPart + updatedRowIndex; // Return the updated cell reference
+  // }
 
   public Tuple<bool, string> UpdateQuery(List<FilterQueryParser> filterQueries, List<SetQueryParser> setQueries, bool onlyFirst) {
     foreach (var filterQuery in filterQueries) {
@@ -125,12 +180,6 @@ public sealed class ExcelSheetPack
         return new Tuple<bool, string>(false, "No data found in Excel file");
       }
 
-      // var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
-      // if (filterColumnIndex == -1) {
-      //   return new Tuple<bool, string>(false, $"Filter column {filterQuery.Column} not found.");
-      // }
-      //
-
       var filterQueryColumnIndexTuple = new List<Tuple<int, FilterQueryParser>>();
       foreach (var filterQuery in filterQueries) {
         var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
@@ -162,8 +211,10 @@ public sealed class ExcelSheetPack
       //   return new Tuple<bool, string>(false, $"Set column {setQuery.Column} not found.");
       // }
 
-      var updated = 0;
+      var updatedCells = 0;
+      var updatedRows = 0;
       foreach (var row in sheetData.Elements<Row>()) {
+        var isRowUpdated = false;
         foreach (var kpFilterQuery in filterQueryColumnIndexTuple) {
           var filterQuery = kpFilterQuery.Item2;
           var filterColumnIndex = kpFilterQuery.Item1;
@@ -175,34 +226,40 @@ public sealed class ExcelSheetPack
 
           var filterValue = GetCellValue(document, filterCell);
           var checkFilterResult = CheckFilter(filterValue, filterQuery.Value, filterQuery.Operator);
-          if (checkFilterResult) {
-            foreach (var kpSetQuery in setQueryColumnIndexDict) {
-              var setQuery = kpSetQuery.Value;
-              var index = kpSetQuery.Key;
-              var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
-              if (setCell == null) {
-                Log.Verbose("UpdateQuery::Cell not found, skipping row.");
-                continue;
-              }
+          if (!checkFilterResult) continue;
+          foreach (var kpSetQuery in setQueryColumnIndexDict) {
+            var setQuery = kpSetQuery.Value;
+            var index = kpSetQuery.Key;
+            var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
+            if (setCell == null) {
+              Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+              continue;
+            }
 
-              var setCellValue = GetCellValue(document, setCell);
-              UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
-              updated++;
-              Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
-              if (onlyFirst) {
-                Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
-                break;
-              }
+            var setCellValue = GetCellValue(document, setCell);
+            UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
+            updatedCells++;
+            isRowUpdated = true;
+            Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
+            if (onlyFirst) {
+              Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
+              break;
             }
           }
         }
+
+        if (isRowUpdated) {
+          updatedRows++;
+        }
+
+        isRowUpdated = false;
       }
 
       worksheetPart.Worksheet.Save();
 
-      if (updated > 0) {
-        Log.Information("Rows updated: {updated}", updated);
-        return new Tuple<bool, string>(true, $"Rows updated: {updated}");
+      if (updatedRows > 0) {
+        Log.Information("Rows updated: {updatedRows} Cells updated: {UpdatedCells}", updatedRows, updatedCells);
+        return new Tuple<bool, string>(true, $"Rows updated: {updatedRows} Cells updated: {updatedCells}");
       }
 
       Log.Information("No rows updated.");
