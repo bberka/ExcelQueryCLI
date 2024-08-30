@@ -9,8 +9,8 @@ public sealed class ExcelQueryCoconaApp
 {
   [Command("update", Description = "Update Excel file")]
   public void Update(
-    [Option("file", ['f'], Description = "Excel file path")]
-    string file,
+    [Option("file", ['f'], Description = "Excel file or directory path")]
+    string[] paths,
     [Option("sheet", ['s'], Description = "Sheet name")]
     string sheet,
     [Option("filter-query", Description = "Filter query string")]
@@ -22,19 +22,25 @@ public sealed class ExcelQueryCoconaApp
     [Option("header-row-index", Description = "Header row index")]
     uint headerRowIndex = 1
   ) {
-    Log.Information("ExcelQueryCLI.Update: {file} {sheet} {filterQuery} {setQuery}", file, sheet, filterQueryString, setQueryString);
+    Log.Information("ExcelQueryCLI.Update: {file} {sheet} {filterQuery} {setQuery}", paths, sheet, filterQueryString, setQueryString);
     var fqParsed = ParseFilterQuery(filterQueryString);
     var sqParsed = ParseSetQuery(setQueryString);
     if (sqParsed is null) {
       return;
     }
 
-    try {
-      var reader = new ExcelSheetPack(file, sheet,headerRowIndex);
-      var result = reader.UpdateQuery(fqParsed, sqParsed, onlyFirst);
+    if (paths.Length == 0) {
+      Log.Error("No file or directory path provided.");
+      return;
     }
-    catch (Exception ex) {
-      Log.Error("Error updating Excel file: {Message}", ex.Message);
+    foreach (var path in paths) {
+      try {
+        var reader = new ExcelSheetPack(path, sheet, headerRowIndex);
+        reader.UpdateQuery(fqParsed, sqParsed, onlyFirst);
+      }
+      catch (Exception ex) {
+        Log.Error("Error updating Excel file: {Message}", ex.Message);
+      }
     }
   }
 
@@ -79,7 +85,7 @@ public sealed class ExcelQueryCoconaApp
     try {
       foreach (var query in filterQueryString) {
         var parsed = new FilterQueryParser(query);
-        Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Values}",
+        Log.Verbose("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Values}",
                         parsed.Columns,
                         parsed.Operator,
                         parsed.Values);
@@ -103,7 +109,7 @@ public sealed class ExcelQueryCoconaApp
     try {
       foreach (var query in setQueryString) {
         var parsed = new SetQueryParser(query);
-        Log.Information("Parsed Set Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
+        Log.Verbose("Parsed Set Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
                         parsed.Column,
                         parsed.Operator,
                         parsed.Value);
