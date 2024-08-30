@@ -1,10 +1,11 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 using ExcelQueryCLI.Static;
 
 namespace ExcelQueryCLI.Parsers;
 
 /// <summary>
-///  Example: 'Item Identity Number' SET '12334 1XXD2'
+/// Example: "('Item Identity Number') SET ('12334 1XXD2')"
 /// </summary>
 public sealed class SetQueryParser
 {
@@ -15,9 +16,10 @@ public sealed class SetQueryParser
   public UpdateOperator Operator { get; private set; }
 
   private static readonly string EnumPattern = string.Join("|", Enum.GetNames(typeof(UpdateOperator)));
-  
+
+  // Updated regex pattern to match the new syntax
   private static readonly Regex QueryRegex = new Regex(
-                                                       @"^(?<column>.+?)\s+(?<operator>" + EnumPattern + @")\s+'(?<value>.+?)'$",
+                                                       @"^\((?<column>.+?)\)\s+SET\s+\((?<value>.+?)\)$",
                                                        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
   public SetQueryParser(string query) {
@@ -27,18 +29,18 @@ public sealed class SetQueryParser
       throw new FormatException("Query format is invalid.");
     }
 
-    Column = match.Groups["column"].Value.Trim('\'');
-    var operatorStr = match.Groups["operator"].Value.Trim('\'').ToUpper();
-    Value = match.Groups["value"].Value;
+    Column = match.Groups["column"].Value.Trim().Trim('\'');
+    Value = match.Groups["value"].Value.Trim().Trim('\'');
 
-    if (!Enum.TryParse<UpdateOperator>(operatorStr, out var updateOperator)) {
-      throw new ArgumentException($"Invalid operator: {operatorStr}");
-    }
-
-    Operator = updateOperator;
+    // Assuming SET is the only operator used here
+    Operator = UpdateOperator.SET; // Set a default operator since it's always SET
 
     if (string.IsNullOrEmpty(Column)) {
       throw new ArgumentException("Column name is empty.");
+    }
+
+    if (string.IsNullOrEmpty(Value)) {
+      throw new ArgumentException("Value is empty.");
     }
   }
 }
