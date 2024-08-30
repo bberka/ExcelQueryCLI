@@ -5,6 +5,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using ExcelQueryCLI.Parsers;
 using ExcelQueryCLI.Static;
 using Serilog;
+using Tuple = DocumentFormat.OpenXml.Spreadsheet.Tuple;
 
 namespace ExcelQueryCLI.Common;
 
@@ -92,16 +93,20 @@ public sealed class ExcelSheetPack
   }
 
 
-  public Tuple<bool, string> UpdateQuery(FilterQueryParser filterQuery, SetQueryParser setQuery, bool onlyFirst) {
-    Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
-                    filterQuery.Column,
-                    filterQuery.Operator,
-                    filterQuery.Value);
-    Log.Information("Parsed Set Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
-                    setQuery.Column,
-                    setQuery.Operator,
-                    setQuery.Value);
+  public Tuple<bool, string> UpdateQuery(List<FilterQueryParser> filterQueries, List<SetQueryParser> setQueries, bool onlyFirst) {
+    foreach (var filterQuery in filterQueries) {
+      Log.Information("Parsed Filter Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
+                      filterQuery.Column,
+                      filterQuery.Operator,
+                      filterQuery.Value);
+    }
 
+    foreach (var query in setQueries) {
+      Log.Information("Parsed Set Query: Column: {Column}, Operator: {Operator}, Value: {Value}",
+                      query.Column,
+                      query.Operator,
+                      query.Value);
+    }
 
     try {
       using var document = SpreadsheetDocument.Open(_filePath, true);
@@ -120,35 +125,75 @@ public sealed class ExcelSheetPack
         return new Tuple<bool, string>(false, "No data found in Excel file");
       }
 
-      var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
-      if (filterColumnIndex == -1) {
-        return new Tuple<bool, string>(false, $"Filter column {filterQuery.Column} not found.");
-      }
+      // var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
+      // if (filterColumnIndex == -1) {
+      //   return new Tuple<bool, string>(false, $"Filter column {filterQuery.Column} not found.");
+      // }
+      //
 
-      var setColumnIndex = GetColumnIndex(document, worksheetPart, setQuery.Column);
-      if (setColumnIndex == -1) {
-        return new Tuple<bool, string>(false, $"Set column {setQuery.Column} not found.");
-      }
-
-      var updated = 0;
-      foreach (var row in sheetData.Elements<Row>()) {
-        var filterCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
-        var setCell = row.Elements<Cell>().ElementAtOrDefault(setColumnIndex);
-        if (filterCell == null || setCell == null) {
-          Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+      var filterQueryColumnIndexTuple = new List<Tuple<int, FilterQueryParser>>();
+      foreach (var filterQuery in filterQueries) {
+        var filterColumnIndex = GetColumnIndex(document, worksheetPart, filterQuery.Column);
+        if (filterColumnIndex == -1) {
+          Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Column);
           continue;
         }
 
-        var filterValue = GetCellValue(document, filterCell);
-        var checkFilterResult = CheckFilter(filterValue, filterQuery.Value, filterQuery.Operator);
-        if (checkFilterResult) {
-          var setCellValue = GetCellValue(document, setCell);
-          UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
-          updated++;
-          Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
-          if (onlyFirst) {
-            Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
-            break;
+        filterQueryColumnIndexTuple.Add(new Tuple<int, FilterQueryParser>(filterColumnIndex, filterQuery));
+      }
+
+      var setQueryColumnIndexDict = new Dictionary<int, SetQueryParser>();
+      foreach (var setQuery in setQueries) {
+        var setColumnIndex = GetColumnIndex(document, worksheetPart, setQuery.Column);
+        if (setColumnIndex == -1) {
+          Log.Warning("Set column {setQuery.Column} not found.", setQuery.Column);
+          continue;
+        }
+
+        var exists = setQueryColumnIndexDict.TryAdd(setColumnIndex, setQuery);
+        if (!exists) {
+          Log.Warning("Set column {setQuery.Column} already exists.", setQuery.Column);
+          continue;
+        }
+      }
+
+      // var setColumnIndex = GetColumnIndex(document, worksheetPart, setQuery.Column);
+      // if (setColumnIndex == -1) {
+      //   return new Tuple<bool, string>(false, $"Set column {setQuery.Column} not found.");
+      // }
+
+      var updated = 0;
+      foreach (var row in sheetData.Elements<Row>()) {
+        foreach (var kpFilterQuery in filterQueryColumnIndexTuple) {
+          var filterQuery = kpFilterQuery.Item2;
+          var filterColumnIndex = kpFilterQuery.Item1;
+          var filterCell = row.Elements<Cell>().ElementAtOrDefault(filterColumnIndex);
+          if (filterCell == null) {
+            Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+            continue;
+          }
+
+          var filterValue = GetCellValue(document, filterCell);
+          var checkFilterResult = CheckFilter(filterValue, filterQuery.Value, filterQuery.Operator);
+          if (checkFilterResult) {
+            foreach (var kpSetQuery in setQueryColumnIndexDict) {
+              var setQuery = kpSetQuery.Value;
+              var index = kpSetQuery.Key;
+              var setCell = row.Elements<Cell>().ElementAtOrDefault(index);
+              if (setCell == null) {
+                Log.Verbose("UpdateQuery::Cell not found, skipping row.");
+                continue;
+              }
+
+              var setCellValue = GetCellValue(document, setCell);
+              UpdateCellValue(setCell, setCellValue, setQuery.Value, setQuery.Operator);
+              updated++;
+              Log.Verbose("UpdateQuery::Row updated: {row}", row.RowIndex);
+              if (onlyFirst) {
+                Log.Verbose("UpdateQuery::Only updating the first matching row, breaking out of loop.");
+                break;
+              }
+            }
           }
         }
       }
@@ -185,13 +230,13 @@ public sealed class ExcelSheetPack
       case FilterOperator.NOT_EQUALS:
         return cellFilterValue != matchFilterValue;
       case FilterOperator.GREATER_THAN:
-        return double.TryParse(cellFilterValue, out var cellValue1) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue1) && cellValue1 > matchValue1;
+        return double.TryParse(cellFilterValue, out var cellValue1) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture, out var matchValue1) && cellValue1 > matchValue1;
       case FilterOperator.LESS_THAN:
-        return double.TryParse(cellFilterValue, out var cellValue2) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue2) && cellValue2 < matchValue2;
+        return double.TryParse(cellFilterValue, out var cellValue2) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture, out var matchValue2) && cellValue2 < matchValue2;
       case FilterOperator.GREATER_THAN_OR_EQUAL:
-        return double.TryParse(cellFilterValue, out var cellValue3) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue3) && cellValue3 >= matchValue3;
+        return double.TryParse(cellFilterValue, out var cellValue3) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture, out var matchValue3) && cellValue3 >= matchValue3;
       case FilterOperator.LESS_THAN_OR_EQUAL:
-        return double.TryParse(cellFilterValue, out var cellValue4) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture,out var matchValue4) && cellValue4 <= matchValue4;
+        return double.TryParse(cellFilterValue, out var cellValue4) && double.TryParse(matchFilterValue, CultureInfo.InvariantCulture, out var matchValue4) && cellValue4 <= matchValue4;
       case FilterOperator.CONTAINS:
         return cellFilterValue.Contains(matchFilterValue);
       case FilterOperator.NOT_CONTAINS:
@@ -208,9 +253,9 @@ public sealed class ExcelSheetPack
           return false;
         }
 
-        return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture,out var cellValue5) &&
-               double.TryParse(values[0], CultureInfo.InvariantCulture,out var matchValue5) &&
-               double.TryParse(values[1], CultureInfo.InvariantCulture,out var matchValue6) &&
+        return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture, out var cellValue5) &&
+               double.TryParse(values[0], CultureInfo.InvariantCulture, out var matchValue5) &&
+               double.TryParse(values[1], CultureInfo.InvariantCulture, out var matchValue6) &&
                cellValue5 >= matchValue5 &&
                cellValue5 <= matchValue6;
       case FilterOperator.NOT_IN:
@@ -221,9 +266,9 @@ public sealed class ExcelSheetPack
           return false;
         }
 
-        return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture,out var cellValue6) &&
-               double.TryParse(values2[0], CultureInfo.InvariantCulture,out var matchValue7) &&
-               double.TryParse(values2[1], CultureInfo.InvariantCulture,out var matchValue8) &&
+        return double.TryParse(cellFilterValue, CultureInfo.InvariantCulture, out var cellValue6) &&
+               double.TryParse(values2[0], CultureInfo.InvariantCulture, out var matchValue7) &&
+               double.TryParse(values2[1], CultureInfo.InvariantCulture, out var matchValue8) &&
                (cellValue6 < matchValue7 ||
                 cellValue6 > matchValue8);
       default:
@@ -284,12 +329,12 @@ public sealed class ExcelSheetPack
     double? parsedOldValue = null;
     double? parsedNewValue = null;
     if (isRequiredToParse) {
-      if (!double.TryParse(oldValue, CultureInfo.InvariantCulture,out var oldValueDouble)) {
+      if (!double.TryParse(oldValue, CultureInfo.InvariantCulture, out var oldValueDouble)) {
         Log.Verbose("UpdateCellValue::Failed to parse old value: {oldValue}", oldValue);
         return;
       }
 
-      if (!double.TryParse(newValue, CultureInfo.InvariantCulture,out var newValueDouble)) {
+      if (!double.TryParse(newValue, CultureInfo.InvariantCulture, out var newValueDouble)) {
         Log.Verbose("UpdateCellValue::Failed to parse new value: {newValue}", newValue);
         return;
       }

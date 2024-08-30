@@ -18,7 +18,10 @@ args = [
   "-f", "D:\\DataSheet_ItemDataTable_Bartar.xlsm",
   "-s", "Item_Table",
   "--filter-query", "'^Index' EQUALS '800001'",
-  "--set-query", "'~ItemName' SET 'WORKS?'"
+  "--filter-query", "'^Index' EQUALS '800002'",
+  "--filter-query", "'^Index' EQUALS '800004'",
+  "--set-query", "'~ItemName' SET 'WORKS?'",
+  "--set-query", "'ItemType' SET 'XXX'"
 ];
 #endif
 
