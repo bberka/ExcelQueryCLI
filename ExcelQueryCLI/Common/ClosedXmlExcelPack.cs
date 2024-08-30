@@ -69,12 +69,12 @@ public sealed class ClosedXmlExcelPack
       using var workbook = new XLWorkbook(filePath);
       var hasSheet = workbook.Worksheets.Any(x => x.Name.Equals(SheetName, StringComparison.OrdinalIgnoreCase));
       if (!hasSheet) {
-        Log.Error("Sheet not found: {sheet}", SheetName);
+        Log.Warning("File does not have sheet: {sheet} {file}", SheetName, filePath);
         return;
       }
       var worksheet = workbook.Worksheet(SheetName);
       if (worksheet is null) {
-        Log.Verbose("Sheet not found: {sheet} {file}", SheetName,filePath);
+        Log.Warning("File does not have sheet: {sheet} {file}", SheetName, filePath);
         return;
       }
 
