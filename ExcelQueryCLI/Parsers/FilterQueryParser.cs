@@ -14,9 +14,10 @@ public sealed class FilterQueryParser
   public string Value { get; private set; }
   public FilterOperator Operator { get; private set; }
 
+  private static readonly string EnumPattern = string.Join("|", Enum.GetNames(typeof(FilterOperator)));
 
   private static readonly Regex QueryRegex = new(
-                                                 @"^(?<column>.+?)\s+(?<operator>EQUALS|NOT_EQUALS|GREATER_THAN|LESS_THAN|GREATER_THAN_OR_EQUAL|LESS_THAN_OR_EQUAL|LIKE|IN|BETWEEN)\s+'(?<value>.+?)'$",
+                                                 @"^(?<column>.+?)\s+(?<operator>" + EnumPattern + @")\s+'(?<value>.+?)'$",
                                                  RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
   public FilterQueryParser(string query) {

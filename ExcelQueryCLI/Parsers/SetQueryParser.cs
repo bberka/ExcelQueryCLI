@@ -14,8 +14,10 @@ public sealed class SetQueryParser
   public string Value { get; private set; }
   public UpdateOperator Operator { get; private set; }
 
+  private static readonly string EnumPattern = string.Join("|", Enum.GetNames(typeof(UpdateOperator)));
+  
   private static readonly Regex QueryRegex = new Regex(
-                                                       @"^(?<column>.+?)\s+(?<operator>SET|MULTIPLY|DIVIDE|ADD|SUBTRACT)\s+'(?<value>.+?)'$",
+                                                       @"^(?<column>.+?)\s+(?<operator>" + EnumPattern + @")\s+'(?<value>.+?)'$",
                                                        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
   public SetQueryParser(string query) {
