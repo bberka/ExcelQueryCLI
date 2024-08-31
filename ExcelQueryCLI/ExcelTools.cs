@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using ExcelQueryCLI.Parsers;
 using ExcelQueryCLI.Static;
 using Serilog;
 
@@ -13,6 +14,7 @@ internal static class ExcelTools
         return true;
       }
     }
+
     return false;
   }
 
@@ -157,5 +159,46 @@ internal static class ExcelTools
       default:
         throw new ArgumentOutOfRangeException(nameof(setOperator), setOperator, null);
     }
+  }
+  internal static Dictionary<int, SetQueryParser> GetSetQueryColumnIndexDict(List<SetQueryParser> setQueries, List<string> headers) {
+    var result = new Dictionary<int, SetQueryParser>();
+    foreach (var setQuery in setQueries) {
+      var setColumnIndex = headers.FindIndex(header => header.Equals(setQuery.Column, StringComparison.OrdinalIgnoreCase));
+      if (setColumnIndex == -1) {
+        Log.Warning("Set column {setQuery.Column} not found.", setQuery.Column);
+        continue;
+      }
+
+      result[setColumnIndex] = setQuery;
+    }
+
+    return result;
+  }
+
+  internal static List<Tuple<List<int>, FilterQueryParser>>? GetFilterQueryColumnIndexTuple(List<FilterQueryParser>? filterQueries, List<string> headers) {
+    List<Tuple<List<int>, FilterQueryParser>>? result = null;
+    if (filterQueries is null) return result;
+    result = new List<Tuple<List<int>, FilterQueryParser>>();
+    foreach (var filterQuery in filterQueries) {
+      var indexes = new List<int>();
+      foreach (var col in filterQuery.Columns) {
+        var filterColumnIndex = headers.FindIndex(header => header.Equals(col, StringComparison.OrdinalIgnoreCase));
+        if (filterColumnIndex == -1) {
+          Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Columns);
+          continue;
+        }
+
+        indexes.Add(filterColumnIndex);
+      }
+
+      if (indexes.Count == 0) {
+        Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Columns);
+        continue;
+      }
+
+      result.Add(new Tuple<List<int>, FilterQueryParser>(indexes, filterQuery));
+    }
+
+    return result;
   }
 }

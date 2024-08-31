@@ -1,6 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 using ExcelQueryCLI.Static;
 
+namespace ExcelQueryCLI.Parsers;
+
 /// <summary>
 /// Example: "('ItemName' OR 'ItemKey') EQUALS ('MyTestValue' OR 'XSDe' OR 'DdwTest')"
 /// Example: "('ItemName') EQUALS ('MyTestValue')"

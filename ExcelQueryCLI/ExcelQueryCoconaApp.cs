@@ -1,5 +1,6 @@
 ﻿using Cocona;
 using ExcelQueryCLI.Common;
+using ExcelQueryCLI.Xl;
 using Serilog;
 
 namespace ExcelQueryCLI;
@@ -18,8 +19,12 @@ public sealed class ExcelQueryCoconaApp
     string[] setQueryString,
     [Option("only-first", Description = "Whether to update only the first matching row")]
     bool onlyFirst = false,
-    [Option("header-row-index", Description = "Header row index")]
-    uint headerRowIndex = 1
+    [Option("parallelism", Description = "Number of parallel threads")]
+    uint parallelThreads = 0,
+    [Option("header-row-number", Description = "Header row number")]
+    uint headerRowNumber = 1,
+    [Option("start-row-number", Description = "Start row number")]
+    uint startRowIndex = 2
   ) {
     Log.Information("ExcelQueryCLI.Update: {file} {sheet} {filterQuery} {setQuery}", paths, sheet, filterQueryString, setQueryString);
     var fqParsed = ParamHelper.ParseFilterQuery(filterQueryString);
@@ -32,17 +37,17 @@ public sealed class ExcelQueryCoconaApp
       Log.Error("No file or directory path provided.");
       return;
     }
+
     foreach (var path in paths) {
       try {
         // var reader = new OpenXmlExcelPack(path, sheet, headerRowIndex);
-        var reader = new ClosedXmlExcelPack(path, sheet, headerRowIndex);
-        reader.UpdateQuery(fqParsed, sqParsed, onlyFirst);
+        var reader = new ExcelPack(path, sheet, (int)headerRowNumber, (int)startRowIndex, (int)parallelThreads);
+        var updater = new EpPlusExcelUpdater();
+        reader.UpdateQuery(updater, fqParsed, sqParsed, onlyFirst);
       }
       catch (Exception ex) {
         Log.Error("Error updating Excel file: {Message}", ex.Message);
       }
     }
   }
-
- 
 }
