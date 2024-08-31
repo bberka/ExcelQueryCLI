@@ -88,10 +88,15 @@ ExcelQueryCLI.exe update -f <file> -s <sheet> --filter-query <filter-query> --se
 - `--set-query` _(required)_
   - The set query to update the rows
   - You can pass multiple set query parameters to update the rows
+- `--header-row-number`
+  - The row number of the header row in the sheet. Default is 1
+- `--start-row-number`
+  - The row number to start processing. Default is 2
+- `--parallelism`
+  - The number of parallel threads to use for processing. Default is 1
 - `--only-first`
   - If set, only the first row that matches the filter query will be updated
-- `--header-row-index`
-  - The row number of the header row in the sheet. Default is 1
+
 
 ### Example
 
@@ -108,3 +113,33 @@ ExcelQueryCLI.exe update -f "sample.xlsx" -f "sample2.xlsx"  -f "D:\\SampleDirec
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+## Changelog 
+
+
+### v1.5
+- Dumped the OpenXML SDK and switched to EPPlus for better file handling
+- Added support for parallel processing with `--parallelism` parameter
+- Changed parameter name `--header-row-index` to `--header-row-number`
+- Added parameter `--start-row-number` to specify the row number to start processing
+- Better separation of methods
+- Fixed a buf where the set query operator was not being applied to any other than SET operator
+
+### v1.4
+- Added support for directory path
+- Added support for multiple `-f` parameters
+
+### v1.3
+- Added possibility to update without filter query
+### v1.2
+- Syntax change
+- Added support for multiple column names in single filter query
+- Added support for multiple values in single set query
+
+### v1.1
+- Removed delete functionality for now
+- Bug fixes
+- Regex dynamic enum generation
+
+### v1.0
+- Initial release
