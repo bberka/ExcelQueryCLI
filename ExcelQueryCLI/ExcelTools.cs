@@ -160,6 +160,7 @@ internal static class ExcelTools
         if (setValue is null) {
           return cellValue;
         }
+
         var values = setValue?.Split(StaticSettings.DefaultReplaceSplitString);
         if (values?.Length != 2) return cellValue;
         return cellValue?.Replace(values[0], values[1]);
@@ -206,7 +207,7 @@ internal static class ExcelTools
   public static bool IsAllMatched(ExcelSimpleData excelSimpleData, int row, FilterQuery[] filters) {
     foreach (var filter in filters)
     foreach (var header in excelSimpleData.Headers) {
-      var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString(); 
+      var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString();
       if (header.Value != filter.Column) continue;
 
       var res = CheckIfAnyMatch(headerValue, filter.Values, filter.CompareOperator);
@@ -223,7 +224,7 @@ internal static class ExcelTools
     foreach (var header in excelSimpleData.Headers) {
       if (header.Value != filter.Column) continue;
 
-      var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString(); 
+      var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString();
       var res = CheckIfAnyMatch(headerValue, filter.Values, filter.CompareOperator);
       if (res) return true;
     }
@@ -238,5 +239,21 @@ internal static class ExcelTools
 
     var backupFile = Path.Combine(backupFolder, Path.GetFileNameWithoutExtension(file) + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + Path.GetExtension(file));
     File.Copy(file, backupFile);
+  }
+
+  public static SupportedFileType GetFileType(string file) {
+    if (file.EndsWith("xml")) {
+      return SupportedFileType.XML;
+    }
+
+    if (file.EndsWith("json")) {
+      return SupportedFileType.JSON;
+    }
+
+    if (file.EndsWith("yaml")) {
+      return SupportedFileType.YAML;
+    }
+
+    throw new Exception("Unsupported file type: " + file);
   }
 }

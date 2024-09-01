@@ -2,6 +2,7 @@
 using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Models.Delete;
 using ExcelQueryCLI.Models.Update;
+using ExcelQueryCLI.Static;
 using ExcelQueryCLI.Xl;
 using OfficeOpenXml;
 using Serilog;
@@ -12,8 +13,8 @@ public sealed class ExcelQueryCoconaApp
 {
   [Command("update", Description = "Update rows in Excel file")]
   public void Update(
-    [Option("query", ['q'], Description = "Yaml query file path")]
-    string yamlFilePath,
+    [Option("query", ['q'], Description = "Query file path (YAML, JSON, or XML)")]
+    string filePath,
     [Option("parallelism", ['p'], Description = "Number of parallel threads")]
     byte parallelThreads = 1
   ) {
@@ -24,7 +25,8 @@ public sealed class ExcelQueryCoconaApp
 
     ExcelUpdateQuery q;
     try {
-      q = ExcelUpdateQuery.ParseYamlFile(yamlFilePath);
+      var fileType = ExcelTools.GetFileType(filePath);
+      q = ExcelUpdateQuery.ParseFile(filePath, fileType);
     }
     catch (Exception ex) {
       Log.Error("Error parsing Yaml file: {Message}", ex.Message);
@@ -44,7 +46,7 @@ public sealed class ExcelQueryCoconaApp
   [Command("delete", Description = "Delete rows in Excel file")]
   public void Delete(
     [Option("query", ['q'], Description = "Yaml query file path")]
-    string yamlFilePath,
+    string filePath,
     [Option("parallelism", ['p'], Description = "Number of parallel threads")]
     byte parallelThreads = 1
   ) {
@@ -55,7 +57,8 @@ public sealed class ExcelQueryCoconaApp
 
     ExcelDeleteQuery q;
     try {
-      q = ExcelDeleteQuery.ParseYamlFile(yamlFilePath);
+      var fileType = ExcelTools.GetFileType(filePath);
+      q = ExcelDeleteQuery.ParseFile(filePath, fileType);
     }
     catch (Exception ex) {
       Log.Error("Error parsing Yaml file: {Message}", ex.Message);

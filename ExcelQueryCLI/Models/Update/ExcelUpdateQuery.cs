@@ -1,5 +1,8 @@
-﻿using ExcelQueryCLI.Common;
+﻿using System.Xml.Serialization;
+using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
+using ExcelQueryCLI.Static;
+using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -29,9 +32,24 @@ public sealed record ExcelUpdateQuery : IModel
     return yamlObject;
   }
 
-  public static ExcelUpdateQuery ParseYamlFile(string path) {
+  public static ExcelUpdateQuery ParseFile(string path, SupportedFileType fileType) {
     var yaml = File.ReadAllText(path);
-    return ParseYamlText(yaml);
+    return fileType switch {
+      SupportedFileType.YAML => ParseYamlText(yaml),
+      SupportedFileType.JSON => ParseJsonText(yaml),
+      SupportedFileType.XML => ParseXmlText(yaml),
+      _ => throw new ArgumentOutOfRangeException(nameof(fileType), fileType, null)
+    };
+  }
+
+  public static ExcelUpdateQuery ParseJsonText(string text) {
+    return JsonConvert.DeserializeObject<ExcelUpdateQuery>(text) ?? throw new ArgumentException("Invalid JSON");
+  }
+
+  public static ExcelUpdateQuery ParseXmlText(string text) {
+    var xmlSerializer = new XmlSerializer(typeof(ExcelUpdateQuery));
+    using var reader = new StringReader(text);
+    return (ExcelUpdateQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
   }
 
   public void Validate() {
