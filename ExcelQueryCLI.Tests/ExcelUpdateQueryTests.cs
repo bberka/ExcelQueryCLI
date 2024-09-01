@@ -1,5 +1,6 @@
 ﻿using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Models.Update;
+using ExcelQueryCLI.Static;
 
 namespace ExcelQueryCLI.Tests;
 
@@ -30,7 +31,7 @@ public sealed class ExcelUpdateQueryTests
                             <filters column="NAME" compare="EQUALS">
                               <values>John</values>
                             </filters>
-                            <filters column="FULLNAME" compare="EQUALS">
+                            <filters column="FULLNAME" compare="NOT_EQUALS">
                               <values>Mark</values>
                             </filters>
                           </query>
@@ -39,12 +40,41 @@ public sealed class ExcelUpdateQueryTests
                           </query>
                         </root>
                         """;
-    Assert.DoesNotThrow(() => {
-      var excelQuery = ExcelUpdateQuery.ParseXmlText(json);
-      Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
-      Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
-      Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
-    });
+    var excelQuery = ExcelUpdateQuery.ParseXmlText(json);
+    Assert.That(excelQuery.Backup, Is.True);
+    Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Source, Has.Member("ExcelFile.xlsx"));
+    Assert.That(excelQuery.Source, Has.Member("ExcelFile2.xlsx"));
+    Assert.That(excelQuery.Source, Has.Member("Folder\\ExcelFiles"));
+    Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Sheets[0].Name, Is.EqualTo("Employees Table"));
+    Assert.That(excelQuery.Sheets[0].HeaderRow, Is.EqualTo(1));
+    Assert.That(excelQuery.Sheets[0].StartRow, Is.EqualTo(2));
+    Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Query[0].Filters?[0].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[0].Filters?[0].Column, Is.EqualTo("NAME"));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Length.EqualTo(2));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Member("John"));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Member("Mark"));
+    Assert.That(excelQuery.Query[0].Update?[0].Column, Is.EqualTo("Fullname"));
+    Assert.That(excelQuery.Query[0].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.APPEND));
+    Assert.That(excelQuery.Query[0].Update?[0].Value, Is.EqualTo("John Doe"));
+
+    Assert.That(excelQuery.Query[1].Filters?[0].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[1].Filters?[0].Column, Is.EqualTo("NAME"));
+    Assert.That(excelQuery.Query[1].Filters?[0].Values, Has.Length.EqualTo(1));
+    Assert.That(excelQuery.Query[1].Filters?[0].Values, Has.Member("John"));
+    Assert.That(excelQuery.Query[1].Filters?[1].CompareOperator, Is.EqualTo(CompareOperator.NOT_EQUALS));
+    Assert.That(excelQuery.Query[1].Filters?[1].Column, Is.EqualTo("FULLNAME"));
+    Assert.That(excelQuery.Query[1].Filters?[1].Values, Has.Length.EqualTo(1));
+    Assert.That(excelQuery.Query[1].Filters?[1].Values, Has.Member("Mark"));
+    Assert.That(excelQuery.Query[1].Update?[0].Column, Is.EqualTo("Address"));
+    Assert.That(excelQuery.Query[1].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.SET));
+    Assert.That(excelQuery.Query[1].Update?[0].Value, Is.EqualTo("Turkey"));
+
+    Assert.That(excelQuery.Query[2].Update?[0].Column, Is.EqualTo("Salary"));
+    Assert.That(excelQuery.Query[2].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.MULTIPLY));
+    Assert.That(excelQuery.Query[2].Update?[0].Value, Is.EqualTo("1.3"));
     Assert.Pass();
   }
 
@@ -92,6 +122,7 @@ public sealed class ExcelUpdateQueryTests
                               ]
                             },
                             {
+                              "filter_merge": "AND",
                               "update": [
                                 {
                                   "column": "Address",
@@ -99,7 +130,6 @@ public sealed class ExcelUpdateQueryTests
                                   "value": "Turkey"
                                 }
                               ],
-                              "filter_merge": "AND",
                               "filters": [
                                 {
                                   "column": "NAME",
@@ -129,12 +159,44 @@ public sealed class ExcelUpdateQueryTests
                           ]
                         }
                         """;
-    Assert.DoesNotThrow(() => {
-      var excelQuery = ExcelUpdateQuery.ParseJsonText(json);
-      Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
-      Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
-      Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
-    });
+    var excelQuery = ExcelUpdateQuery.ParseJsonText(json);
+    Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
+
+    Assert.That(excelQuery.Source, Has.Member("ExcelFile.xlsx"));
+    Assert.That(excelQuery.Source, Has.Member("ExcelFile2.xlsx"));
+    Assert.That(excelQuery.Source, Has.Member("Folder\\ExcelFiles"));
+
+    Assert.That(excelQuery.Sheets[0].Name, Is.EqualTo("Employees Table"));
+    Assert.That(excelQuery.Sheets[0].HeaderRow, Is.EqualTo(1));
+    Assert.That(excelQuery.Sheets[0].StartRow, Is.EqualTo(2));
+
+    Assert.That(excelQuery.Query[0].Filters?[0].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[0].Filters?[0].Column, Is.EqualTo("NAME"));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Length.EqualTo(2));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Member("John"));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Member("Mark"));
+    Assert.That(excelQuery.Query[0].Update?[0].Column, Is.EqualTo("Fullname"));
+    Assert.That(excelQuery.Query[0].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.APPEND));
+    Assert.That(excelQuery.Query[0].Update?[0].Value, Is.EqualTo("John Doe"));
+
+    Assert.That(excelQuery.Query[1].Filters?[0].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[1].Filters?[0].Column, Is.EqualTo("NAME"));
+    Assert.That(excelQuery.Query[1].Filters?[0].Values, Has.Length.EqualTo(1));
+    Assert.That(excelQuery.Query[1].Filters?[0].Values, Has.Member("John"));
+    Assert.That(excelQuery.Query[1].Filters?[1].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[1].Filters?[1].Column, Is.EqualTo("FULLNAME"));
+    Assert.That(excelQuery.Query[1].Filters?[1].Values, Has.Length.EqualTo(1));
+    Assert.That(excelQuery.Query[1].Filters?[1].Values, Has.Member("Mark"));
+    Assert.That(excelQuery.Query[1].Update?[0].Column, Is.EqualTo("Address"));
+    Assert.That(excelQuery.Query[1].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.SET));
+    Assert.That(excelQuery.Query[1].Update?[0].Value, Is.EqualTo("Turkey"));
+
+    Assert.That(excelQuery.Query[2].Update?[0].Column, Is.EqualTo("Salary"));
+    Assert.That(excelQuery.Query[2].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.MULTIPLY));
+    Assert.That(excelQuery.Query[2].Update?[0].Value, Is.EqualTo("1.3"));
+
     Assert.Pass();
   }
 
