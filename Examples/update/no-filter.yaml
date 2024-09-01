@@ -1,8 +1,7 @@
 ﻿source:
   - 'ExcelFile.xlsx'
 sheets:
-  employee:
-    name: 'Employees Table'
+    - name: 'Employees Table'
 query:
   - update:
       - column: 'Salary'

@@ -52,6 +52,7 @@ See more examples in the [examples](Examples) folder
 
 Check [class models](ExcelQueryCLI/Models) in project to have a better understanding of the query structure
 
+You must use "root" element in XML file
 ### Update Query
 
 At least one update query must be provided for update operation
@@ -65,14 +66,11 @@ source: # You can specify multiple files and directories
   - 'Folder\ExcelFiles'
 backup: true # Backup files before updating
 sheets:
-  employee:
-    name: 'Employees Table' # Name of the sheet
-    header_row: '1' # Row number of the header
-    start_row: '2' # Row number of the first data row
-  salary:
-    name: 'Salary Table'
-  address:
-    name: 'Address Table'
+    - name: 'Employees Table' # Name of the sheet
+      header_row: '1' # Row number of the header
+      start_row: '2' # Row number of the first data row
+    - name: 'Salary Table'
+    - name: 'Address Table'
 query:
   - update: # With single filter
       - column: 'Fullname' # Column name to update
@@ -117,8 +115,7 @@ Simple query without any filters
 source:
   - 'ExcelFile.xlsx'
 sheets:
-  employee:
-    name: 'Employees Table'
+    - name: 'Employees Table'
 query:
   - update:
       - column: 'Salary'
@@ -136,8 +133,7 @@ Simple query
 source: # Source file or directory path
   - 'ExcelFile.xlsx'
 sheets: # Sheet names to be processed
-  employee: # Sheet dictionary key 
-    name: 'Employees Table' # Sheet name
+    - name: 'Employees Table' # Sheet name
 query:
   - filters: # Filter queries
       - column: 'Department' # Column name to filter
@@ -152,8 +148,7 @@ Simple query with multiple filters
 source: # Source file or directory path
   - 'ExcelFile.xlsx'
 sheets: # Sheet names to be processed
-  employee: # Sheet dictionary key 
-    name: 'Employees Table' # Sheet name
+    - name: 'Employees Table' # Sheet name
 query:
   filter_merge: 'AND' # Filter merge operator (AND, OR) only valid when multiple filters are used
   filters: # Filter queries
@@ -303,6 +298,10 @@ ExcelQueryCLI.exe delete -q "delete.yaml" -p 4
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
 ## Changelog
+
+### v2.3
+- Fixed XML dictionary serialization issue
+- Refactored sheets model which caused syntax model change
 
 ### v2.2
 - Fixed an issue where JSON and XML query files were not being read correctly
