@@ -73,7 +73,16 @@ public sealed class ExcelDeleteQuery : IModel
     if (Source == null) {
       throw new ArgumentException("Source must be provided");
     }
+    
+    if (Source == null) {
+      throw new ArgumentException("Source must be provided");
+    }
 
+    if (Sheets == null) {
+      throw new ArgumentException("Sheets must be provided");
+    }
+
+    
     if (Source.Length == 0)
       throw new ArgumentException("Source must be provided");
 
