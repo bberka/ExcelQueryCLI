@@ -23,7 +23,7 @@ public sealed record QuerySheetInformation : IModel
   [JsonPropertyName("header_row")]
   public int HeaderRow { get; set; } = StaticSettings.DefaultHeaderRowNumber;
 
-  [YamlMember(Alias = "start_row")] 
+  [YamlMember(Alias = "start_row")]
   [XmlAttribute("start_row")]
   [JsonPropertyName("start_row")]
   public int StartRow { get; set; } = StaticSettings.DefaultStartRowIndex;
@@ -38,7 +38,7 @@ public sealed record QuerySheetInformation : IModel
     if (HeaderRow >= StartRow)
       throw new ArgumentException("HeaderRow must be less than StartRow");
 
-    if (string.IsNullOrWhiteSpace(Name))
+    if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrEmpty(Name) || Name is null)
       throw new ArgumentException("Name cannot be empty");
   }
 }
