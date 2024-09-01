@@ -90,5 +90,7 @@ public sealed record FilterQuery : IModel
       default:
         throw new ArgumentOutOfRangeException();
     }
+    
+    Values = Values.Select(x => x.Trim()).Distinct().ToArray();
   }
 }
