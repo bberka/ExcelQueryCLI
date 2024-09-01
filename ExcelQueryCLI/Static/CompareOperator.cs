@@ -1,6 +1,6 @@
 ﻿namespace ExcelQueryCLI.Static;
 
-public enum FilterOperator
+public enum CompareOperator
 {
   EQUALS,
   NOT_EQUALS,
@@ -14,4 +14,6 @@ public enum FilterOperator
   ENDS_WITH,
   BETWEEN,
   NOT_BETWEEN,
+  IS_NULL_OR_BLANK,
+  IS_NOT_NULL_OR_BLANK
 }

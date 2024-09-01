@@ -1,56 +1,58 @@
 ﻿using System.Globalization;
-using ExcelQueryCLI.Parsers;
+using ExcelQueryCLI.Common;
+using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Static;
+using OfficeOpenXml;
 using Serilog;
 
 namespace ExcelQueryCLI;
 
 internal static class ExcelTools
 {
-  internal static bool CheckIfMatchingFilter(string? checkCellValue, List<string> matchValues, FilterOperator @operator) {
-    //Check if matches any
-    foreach (var checkValue in matchValues) {
-      if (CheckIfMatchingFilter(checkCellValue, checkValue, @operator)) {
-        return true;
-      }
-    }
-
-    return false;
+  internal static bool CheckIfAnyMatch(string? checkCellValue, string[] matchValue, CompareOperator @operator) {
+    return matchValue.Select(match => CheckIfMatch(checkCellValue, match, @operator)).Any(res => res);
   }
 
-  internal static bool CheckIfMatchingFilter(string? checkCellValue, string matchValue, FilterOperator @operator) {
+  internal static bool CheckIfMatch(string? checkCellValue, string matchValue, CompareOperator @operator) {
     Log.Verbose("CheckFilter::Cell Value: {cellFilterValue}, Match Value: {matchFilterValue}, Operator: {Operator}",
                 checkCellValue,
                 matchValue,
                 @operator);
 
-    if (checkCellValue is null) {
-      return false;
-    }
+    if (checkCellValue is null) return false;
 
     switch (@operator) {
-      case FilterOperator.EQUALS:
+      case CompareOperator.EQUALS:
         return checkCellValue == matchValue;
-      case FilterOperator.NOT_EQUALS:
+      case CompareOperator.NOT_EQUALS:
         return checkCellValue != matchValue;
-      case FilterOperator.GREATER_THAN:
-        return double.TryParse(checkCellValue, out var cellValue1) && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue1) && cellValue1 > matchValue1;
-      case FilterOperator.LESS_THAN:
-        return double.TryParse(checkCellValue, out var cellValue2) && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue2) && cellValue2 < matchValue2;
-      case FilterOperator.GREATER_THAN_OR_EQUAL:
-        return double.TryParse(checkCellValue, out var cellValue3) && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue3) && cellValue3 >= matchValue3;
-      case FilterOperator.LESS_THAN_OR_EQUAL:
-        return double.TryParse(checkCellValue, out var cellValue4) && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue4) && cellValue4 <= matchValue4;
-      case FilterOperator.CONTAINS:
+      case CompareOperator.GREATER_THAN:
+        return double.TryParse(checkCellValue, out var cellValue1)
+               && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue1)
+               && cellValue1 > matchValue1;
+      case CompareOperator.LESS_THAN:
+        return double.TryParse(checkCellValue, out var cellValue2)
+               && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue2)
+               && cellValue2 < matchValue2;
+      case CompareOperator.GREATER_THAN_OR_EQUAL:
+        return double.TryParse(checkCellValue, out var cellValue3)
+               && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue3)
+               && cellValue3 >= matchValue3;
+      case CompareOperator.LESS_THAN_OR_EQUAL:
+        return double.TryParse(checkCellValue, out var cellValue4)
+               && double.TryParse(matchValue, CultureInfo.InvariantCulture, out var matchValue4)
+               && cellValue4 <= matchValue4;
+      case CompareOperator.CONTAINS:
+
         return checkCellValue.Contains(matchValue);
-      case FilterOperator.NOT_CONTAINS:
+      case CompareOperator.NOT_CONTAINS:
         return !checkCellValue.Contains(matchValue);
-      case FilterOperator.STARTS_WITH:
+      case CompareOperator.STARTS_WITH:
         return checkCellValue.StartsWith(matchValue);
-      case FilterOperator.ENDS_WITH:
+      case CompareOperator.ENDS_WITH:
         return checkCellValue.EndsWith(matchValue);
-      case FilterOperator.BETWEEN:
-        var values = matchValue.Split("<>");
+      case CompareOperator.BETWEEN:
+        var values = matchValue.Split(StaticSettings.DefaultNumberStringSplitCharacter);
         if (values.Length != 2) {
           return false;
         }
@@ -60,8 +62,8 @@ internal static class ExcelTools
                double.TryParse(values[1], CultureInfo.InvariantCulture, out var matchValue6) &&
                cellValue5 >= matchValue5 &&
                cellValue5 <= matchValue6;
-      case FilterOperator.NOT_BETWEEN:
-        var values2 = matchValue.Split("|");
+      case CompareOperator.NOT_BETWEEN:
+        var values2 = matchValue.Split(StaticSettings.DefaultNumberStringSplitCharacter);
         if (values2.Length != 2) {
           return false;
         }
@@ -71,6 +73,10 @@ internal static class ExcelTools
                double.TryParse(values2[1], CultureInfo.InvariantCulture, out var matchValue8) &&
                (cellValue6 < matchValue7 ||
                 cellValue6 > matchValue8);
+      case CompareOperator.IS_NULL_OR_BLANK:
+        return string.IsNullOrWhiteSpace(checkCellValue);
+      case CompareOperator.IS_NOT_NULL_OR_BLANK:
+        return !string.IsNullOrWhiteSpace(checkCellValue);
       default:
         throw new ArgumentOutOfRangeException(nameof(@operator), @operator, null);
     }
@@ -82,10 +88,7 @@ internal static class ExcelTools
                 setValue,
                 setOperator);
 
-    var isRequiredToParse = setOperator == UpdateOperator.MULTIPLY ||
-                            setOperator == UpdateOperator.DIVIDE ||
-                            setOperator == UpdateOperator.ADD ||
-                            setOperator == UpdateOperator.SUBTRACT;
+    var isRequiredToParse = setOperator is UpdateOperator.MULTIPLY or UpdateOperator.DIVIDE or UpdateOperator.ADD or UpdateOperator.SUBTRACT;
 
 
     double? parsedOldValue = null;
@@ -150,55 +153,90 @@ internal static class ExcelTools
         return setValue + cellValue;
       case UpdateOperator.REPLACE:
         //split the setValue into two parts, the first part is the old value and the second part is the new value
-        var values = setValue?.Split("<>");
-        if (values?.Length != 2) {
+        if (cellValue is null) {
           return cellValue;
         }
 
-        return cellValue?.Replace(values[0], values[1]) ?? cellValue;
+        if (setValue is null) {
+          return cellValue;
+        }
+        var values = setValue?.Split(StaticSettings.DefaultReplaceSplitString);
+        if (values?.Length != 2) return cellValue;
+        return cellValue?.Replace(values[0], values[1]);
       default:
         throw new ArgumentOutOfRangeException(nameof(setOperator), setOperator, null);
     }
   }
-  internal static Dictionary<int, SetQueryParser> GetSetQueryColumnIndexDict(List<SetQueryParser> setQueries, List<string> headers) {
-    var result = new Dictionary<int, SetQueryParser>();
-    foreach (var setQuery in setQueries) {
-      var setColumnIndex = headers.FindIndex(header => header.Equals(setQuery.Column, StringComparison.OrdinalIgnoreCase));
-      if (setColumnIndex == -1) {
-        Log.Warning("Set column {setQuery.Column} not found.", setQuery.Column);
-        continue;
+
+  /// <summary>
+  /// Validate if the file or directory path exists, then return true if it is a directory.
+  /// </summary>
+  /// <param name="sourceList"></param>
+  /// <returns></returns>
+  /// <exception cref="Exception"></exception>
+  public static IEnumerable<string> GetExcelFilesList(string[] sourceList) {
+    foreach (var source in sourceList) {
+      var isFile = File.Exists(source);
+      var isDirectory = Directory.Exists(source);
+      var isNeither = !isFile && !isDirectory;
+      if (isNeither) throw new Exception("File or directory does not exist: " + source);
+
+      if (isDirectory) {
+        var files = Directory.GetFiles(source, "*.*", SearchOption.AllDirectories)
+                             .Where(s => StaticSettings.SupportedExtensions.Contains(Path.GetExtension(s), StringComparer.OrdinalIgnoreCase));
+        foreach (var file in files) yield return file;
       }
 
-      result[setColumnIndex] = setQuery;
+      yield return source;
     }
-
-    return result;
   }
 
-  internal static List<Tuple<List<int>, FilterQueryParser>>? GetFilterQueryColumnIndexTuple(List<FilterQueryParser>? filterQueries, List<string> headers) {
-    List<Tuple<List<int>, FilterQueryParser>>? result = null;
-    if (filterQueries is null) return result;
-    result = new List<Tuple<List<int>, FilterQueryParser>>();
-    foreach (var filterQuery in filterQueries) {
-      var indexes = new List<int>();
-      foreach (var col in filterQuery.Columns) {
-        var filterColumnIndex = headers.FindIndex(header => header.Equals(col, StringComparison.OrdinalIgnoreCase));
-        if (filterColumnIndex == -1) {
-          Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Columns);
-          continue;
-        }
+  public static Dictionary<int, string> GetHeadersDictionary(ExcelWorksheet worksheet, int headerRowNumber) {
+    var headerRow = worksheet.Cells[headerRowNumber, 1, headerRowNumber, worksheet.Dimension.End.Column];
+    if (headerRow is null) throw new Exception("Header is not found in the worksheet.");
 
-        indexes.Add(filterColumnIndex);
-      }
+    return headerRow.Select((cell, index) => new { cell, index })
+                    .ToDictionary(x => x.index, x => x.cell.Text);
+  }
 
-      if (indexes.Count == 0) {
-        Log.Warning("Filter column {filterQuery.Column} not found.", filterQuery.Columns);
-        continue;
-      }
+  public static void UpdateCellValue(ExcelWorksheet worksheet, int row, int column, string? newValue) {
+    worksheet.Cells[row, column].Value = newValue;
+  }
 
-      result.Add(new Tuple<List<int>, FilterQueryParser>(indexes, filterQuery));
+  public static bool IsAllMatched(ExcelSimpleData excelSimpleData, int row, FilterQuery[] filters) {
+    foreach (var filter in filters)
+    foreach (var header in excelSimpleData.Headers) {
+      var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString(); 
+      if (header.Value != filter.Column) continue;
+
+      var res = CheckIfAnyMatch(headerValue, filter.Values, filter.CompareOperator);
+      if (!res) return false;
     }
 
-    return result;
+    return true;
+  }
+
+  public static bool IsAnyMatched(ExcelSimpleData excelSimpleData, int row, FilterQuery[]? filters) {
+    if (filters is null) return true;
+
+    foreach (var filter in filters)
+    foreach (var header in excelSimpleData.Headers) {
+      if (header.Value != filter.Column) continue;
+
+      var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString(); 
+      var res = CheckIfAnyMatch(headerValue, filter.Values, filter.CompareOperator);
+      if (res) return true;
+    }
+
+    return false;
+  }
+
+  public static void BackupFile(string file) {
+    //Create a backup folder in current directory and add timestamp to the file name and copy
+    var backupFolder = Path.Combine(Directory.GetCurrentDirectory(), "backup");
+    if (!Directory.Exists(backupFolder)) Directory.CreateDirectory(backupFolder);
+
+    var backupFile = Path.Combine(backupFolder, Path.GetFileNameWithoutExtension(file) + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + Path.GetExtension(file));
+    File.Copy(file, backupFile);
   }
 }

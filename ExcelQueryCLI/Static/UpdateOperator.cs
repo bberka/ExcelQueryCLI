@@ -9,6 +9,5 @@ public enum UpdateOperator
   SUBTRACT,
   APPEND,
   PREPEND,
-  REPLACE,
-  
+  REPLACE
 }

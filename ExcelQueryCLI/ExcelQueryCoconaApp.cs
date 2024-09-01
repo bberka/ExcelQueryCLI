@@ -1,53 +1,75 @@
 ﻿using Cocona;
-using ExcelQueryCLI.Common;
+using ExcelQueryCLI.Models;
+using ExcelQueryCLI.Models.Delete;
+using ExcelQueryCLI.Models.Update;
 using ExcelQueryCLI.Xl;
+using OfficeOpenXml;
 using Serilog;
 
 namespace ExcelQueryCLI;
 
 public sealed class ExcelQueryCoconaApp
 {
-  [Command("update", Description = "Update Excel file")]
+  [Command("update", Description = "Update rows in Excel file")]
   public void Update(
-    [Option("file", ['f'], Description = "Excel file or directory path")]
-    string[] paths,
-    [Option("sheet", ['s'], Description = "Sheet name")]
-    string sheet,
-    [Option("filter-query", Description = "Filter query string")]
-    string[]? filterQueryString,
-    [Option("set-query", Description = "Set query string")]
-    string[] setQueryString,
-    [Option("only-first", Description = "Whether to update only the first matching row")]
-    bool onlyFirst = false,
-    [Option("parallelism", Description = "Number of parallel threads")]
-    uint parallelThreads = 0,
-    [Option("header-row-number", Description = "Header row number")]
-    uint headerRowNumber = 1,
-    [Option("start-row-number", Description = "Start row number")]
-    uint startRowIndex = 2
+    [Option("query", ['q'], Description = "Yaml query file path")]
+    string yamlFilePath,
+    [Option("parallelism", ['p'], Description = "Number of parallel threads")]
+    byte parallelThreads = 1
   ) {
-    Log.Information("ExcelQueryCLI.Update: {file} {sheet} {filterQuery} {setQuery}", paths, sheet, filterQueryString, setQueryString);
-    var fqParsed = ParamHelper.ParseFilterQuery(filterQueryString);
-    var sqParsed = ParamHelper.ParseSetQuery(setQueryString);
-    if (sqParsed is null) {
+    if (parallelThreads < 1) {
+      Log.Error("Parallel threads must be greater than or equal to 1.");
       return;
     }
 
-    if (paths.Length == 0) {
-      Log.Error("No file or directory path provided.");
+    ExcelUpdateQuery q;
+    try {
+      q = ExcelUpdateQuery.ParseYamlFile(yamlFilePath);
+    }
+    catch (Exception ex) {
+      Log.Error("Error parsing Yaml file: {Message}", ex.Message);
       return;
     }
 
-    foreach (var path in paths) {
-      try {
-        // var reader = new OpenXmlExcelPack(path, sheet, headerRowIndex);
-        var reader = new ExcelPack(path, sheet, (int)headerRowNumber, (int)startRowIndex, (int)parallelThreads);
-        var updater = new EpPlusExcelUpdater();
-        reader.UpdateQuery(updater, fqParsed, sqParsed, onlyFirst);
-      }
-      catch (Exception ex) {
-        Log.Error("Error updating Excel file: {Message}", ex.Message);
-      }
+    Log.Information("Processing update query");
+    try {
+      var manager = new EpPlusExcelQueryManager(parallelThreads);
+      manager.RunUpdateQuery(q);
+    }
+    catch (Exception ex) {
+      Log.Error("Error updating Excel file: {Message}", ex.Message);
+    }
+  }
+
+  [Command("delete", Description = "Delete rows in Excel file")]
+  public void Delete(
+    [Option("query", ['q'], Description = "Yaml query file path")]
+    string yamlFilePath,
+    [Option("parallelism", ['p'], Description = "Number of parallel threads")]
+    byte parallelThreads = 1
+  ) {
+    if (parallelThreads < 1) {
+      Log.Error("Parallel threads must be greater than or equal to 1.");
+      return;
+    }
+
+    ExcelDeleteQuery q;
+    try {
+      q = ExcelDeleteQuery.ParseYamlFile(yamlFilePath);
+    }
+    catch (Exception ex) {
+      Log.Error("Error parsing Yaml file: {Message}", ex.Message);
+      return;
+    }
+
+
+    Log.Information("Processing delete query");
+    try {
+      var manager = new EpPlusExcelQueryManager(parallelThreads);
+      manager.RunDeleteQuery(q);
+    }
+    catch (Exception ex) {
+      Log.Error("Error deleting Excel file: {Message}", ex.Message);
     }
   }
 }

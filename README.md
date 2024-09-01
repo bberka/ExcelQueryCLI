@@ -1,113 +1,277 @@
 ﻿# ExcelQueryCLI
 
-ExcelQueryCLI is a command line tool that allows you to query Excel files using simple querying.
+ExcelQueryCLI is a command line tool that allows you to update Excel files using yaml querying.
 
 ## You can use ExcelQueryCLI to:
 
-- Update rows in excel file by filtering columns
+- Update rows in Excel files based on the filter query
+- Delete rows in Excel files based on the filter query
+- Automate repetitive tasks in Excel files
+- Process multiple Excel files in bulk
+- Use a simple and intuitive query language to define your operations
+- Backup your files before making any changes
+- Use parallel processing for faster execution
 
 ## Installation
 
-Download the latest release from github and extract the zip file
+-  Download and install .NET 8 SDK from [here](https://dotnet.microsoft.com/download/dotnet/8.0)
+-  Download the latest release from GitHub and extract the zip file
+
+Portable version can be used in any OS. 
+
+Win 64 version is for Windows 64 bit OS and it is a bundled exe file
+
 
 ## Warning
 This app still in early development and may contain bugs. Please use it with caution.
 
 Syntax for querying might change with future updates
 
+## Disclaimer
+This project uses the EPPlus library for Excel file handling.
+
+EPPlus is licensed under the GNU Library General Public License (LGPL) and is free to use for non-commercial purposes. 
+
+For commercial purposes, you need to purchase a license from the [EPPlus website](https://epplussoftware.com/).
+
 ## Query
 
-Simple query language contains 3 important values :
+CLI tool uses YAML files for querying. The YAML file should contain the following structure
 
-- Column Name
-- Operator
-- Value
+See more examples in the [examples](Examples) folder
 
-```bash
-"('<column-name>') <operator> ('<value>')"
-"('<column-name>' OR '<column-name>') <operator> ('<value>' OR '<value>')"
+### Update Query
+At least one update query must be provided for update operation
+
+Complex query with multiple filters
+```yaml
+source: # You can specify multiple files and directories
+  - 'ExcelFile.xlsx'
+  - 'ExcelFile2.xlsx'
+  - 'Folder\ExcelFiles'
+backup: true # Backup files before updating
+sheets:
+  employee:
+    name: 'Employees Table' # Name of the sheet
+    header_row: '1' # Row number of the header
+    start_row: '2' # Row number of the first data row
+  salary:
+    name: 'Salary Table'
+  address:
+    name: 'Address Table'
+query:
+  - update: # With single filter
+      - column: 'Fullname' # Column name to update
+        operator: 'APPEND' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
+        value: 'John Doe' # Value to use for update
+      - column: 'Phone' # Column name to update
+        operator: 'Replace' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
+        value: '555|>|222' # Value to use for update
+    filters: # Filters to apply
+      - column: 'NAME'
+        compare: 'EQUALS'
+        values:
+          - 'John'
+          - 'Mark'
+      - column: 'Salary'
+        compare: 'BETWEEN'
+        values:
+          - '1000-2000'
+  - update: # With multiple filters
+      column: 'Address' # Column name to update
+      operator: 'SET' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
+      value: 'Turkey' # Value to use for update
+    filter_merge: 'AND' # Operator to use for multiple filters, it does not have any effect when there is only one filter
+    filters: # Filters to apply
+      - column: 'NAME' # Multiple filters can be applied
+        compare: 'EQUALS'
+        values:
+          - 'John' # Value to compare
+      - column: 'FULLNAME'
+        compare: 'EQUALS'
+        values:
+          - 'Mark'
+  - update: # you can use without filter
+      - column: 'Salary'
+        operator: 'MULTIPLY'
+        value: '1.3'
 ```
 
-The column name and value should be enclosed in single quotes and parenthesis like in the example above~~~~
+Simple query without any filters
+```yaml
+source:
+  - 'ExcelFile.xlsx'
+sheets:
+  employee:
+    name: 'Employees Table'
+query:
+  - update:
+      - column: 'Salary'
+        operator: 'MULTIPLY'
+        value: '1.3'
+```
+### Delete Query
+At least one filter must be provided for delete operation
 
-### Query Types
+Simple query
+```yaml
+source: # Source file or directory path
+  - 'ExcelFile.xlsx'
+sheets: # Sheet names to be processed
+  employee: # Sheet dictionary key 
+    name: 'Employees Table' # Sheet name
+query:
+  - filters: # Filter queries
+      - column: 'Department' # Column name to filter
+        operator: 'EQUALS' # Operator to use for filter
+        values: # Values to use for filter (always using OR operation for compare since otherwise does not make any sense)
+          - 'HR'
+```
 
-- Filter Query : Used to filter rows in excel file
-- Set Query : Used to update rows in excel file
+Simple query with multiple filters
+```yaml
+source: # Source file or directory path
+  - 'ExcelFile.xlsx'
+sheets: # Sheet names to be processed
+  employee: # Sheet dictionary key 
+    name: 'Employees Table' # Sheet name
+query:
+    filter_merge: 'AND' # Filter merge operator (AND, OR) only valid when multiple filters are used
+    filters: # Filter queries
+      - column: 'Department' # Column name to filter
+        operator: 'EQUALS' # Operator to use for filter
+        values: # Values to use for filter (always using OR operation for compare since otherwise does not make any sense)
+          - 'HR'
+      - column: 'Location'
+        operator: 'NOT_EQUALS'
+        values:
+          - 'Turkey'
+```
 
-### Filter Query Operators
+### Query Structure
+#### `source` : Source file or directory path
 
+This section specifies the Excel files or directories you want to process.
+You can provide multiple file paths or even directories containing Excel files.
+
+#### `backup` : Backup files before updating
+
+Set this to true to create backup copies of your original files before any updates are made.
+This provides a safety net in case you need to revert any changes.
+
+#### `sheets` : Sheet names to be processed
+
+Here you define the specific sheets within your Excel files that you want to work with.
+
+For each sheet, provide:
+- `name`: The exact name of the sheet in the Excel file.
+- `header_row` (optional): The row number containing the column headers. Defaults to the first row if not provided.
+- `start_row` (optional): The row number where your actual data begins. Defaults to the second row if not provided.
+
+#### `query` : Query items
+This is the core of your configuration, outlining the filtering and update operations you want to perform.
+
+Each query item consists of:
+- `update`: Defines the update action. (_only for update queries_)
+  - `column`: The name of the column you want to modify.
+  - `operator`: The type of update to perform (e.g., SET, ADD, MULTIPLY).
+  - `value`: The value to use in the update operation.
+- `filter_merge` (optional): Specifies how multiple filters should be combined (AND or OR). Only valid when multiple filters are used.
+- `filters` (optional): Specifies the conditions to filter rows before applying the update.
+  - Each filter includes:
+    - `column`: The column to filter on.
+    - `compare`: The comparison operator (e.g., EQUALS, CONTAINS).
+    - `values`: A list of values to compare against.
+
+
+### Compare Operators
+Used in comparing values in the filter queries
 - `EQUALS` : Equals operator
 - `NOT_EQUALS` : Not equals operator
 - `GREATER_THAN` : Greater than operator
+  - Passed value must be a floating number
 - `GREATER_THAN_OR_EQUAL` : Greater than or equal operator
+    - Passed value must be a floating number
 - `LESS_THAN` : Less than operator
+  - Passed value must be a floating number
 - `LESS_THAN_OR_EQUAL` : Less than or equal operator
+  - Passed value must be a floating number
 - `CONTAINS` : Contains operator
 - `NOT_CONTAINS` : Not contains operator
 - `STARTS_WITH` : Starts with operator
 - `ENDS_WITH` : Ends with operator
 - `BETWEEN` : Between operator
+  - You must provide 2 numbers in a single value field separated by a dash (-)
 - `NOT_BETWEEN` : Not between operator
+  - You must provide 2 numbers in a single value field separated by a dash (-)
+- `IS_NULL_OR_BLANK` : Is null or blank operator
+  - You can not give any value when using this operator
+- `IS_NOT_NULL_OR_BLANK` : Is not null or blank operator 
+  - You can not give any value when using this operator
 
-BETWEEN and NOT_BETWEEN operators require the values to be a list of values separated by (<>)
- 
-### Set Query Operators
+
+### Update Operators
+Used in updating values in the update queries
 
 - `SET` : Set operator
 - `MULTIPLY` : Multiply operator
-- `DIVIDE` : Divide operator
+  - Passed value must be floating number
+- `DIVIDE` : Divide operator 
+  - Passed value must be floating number
 - `ADD` : Add operator
+  - Passed value must be floating number
 - `SUBTRACT` : Subtract operator
+  - Passed value must be floating number
 - `APPEND` : Append operator
+  - Passed value can not be empty string
 - `PREPEND` : Prepend operator
+  - Passed value can not be empty string
 - `REPLACE` : Replace operator
+  - You must provide 2 values in a single value field separated by "|>|" (without quotes)
+    - First value is the value to be replaced
+    - Second value is the value to replace with
 
-MULTIPLY, DIVIDE, ADD and SUBTRACT operators require the value of column and set value to be a floating number
-## Update
+## Update Function
 
-Update rows in excel file based on the parameters provided
+Update rows in Excel file based on the parameters provided
 
 ```bash
-ExcelQueryCLI.exe update -f <file> -s <sheet> --filter-query <filter-query> --set-query <set-query> --only-first <only-first>
+ExcelQueryCLI.exe update -q <query-file-path> -p <parallelism>
 ```
 
 ### Parameters
 
-- `-f` or `--file` _(required)_
-  - The file or directory path to the excel file
-  - If a directory path is provided, all excel files in the directory will be processed
-  - If a file path is provided, only that file will be processed
-  - You can pass multiple file paths and directory paths by using -f multiple times
-- `-s` or `--sheet` _(required)_
-  - The name of the sheet in the excel file
-- `--filter-query` 
-  - The filter query to filter the rows to be updated
-  - If no filter query is provided, all rows in the sheet will be updated
-  - You can pass multiple filter query parameters to filter rows by OR operation
-- `--set-query` _(required)_
-  - The set query to update the rows
-  - You can pass multiple set query parameters to update the rows
-- `--header-row-number`
-  - The row number of the header row in the sheet. Default is 1
-- `--start-row-number`
-  - The row number to start processing. Default is 2
-- `--parallelism`
+- `-q` or `--query` _(required)_
+  - The file or directory path to the yaml query file
+- `-p` or `--parallelism`
   - The number of parallel threads to use for processing. Default is 1
-- `--only-first`
-  - If set, only the first row that matches the filter query will be updated
-
 
 ### Example
 
-**Simple query**
 ```bash
-ExcelQueryCLI.exe update -f "sample.xlsx" -s "Sheet1" --filter-query "('Name') EQUALS ('John Doe')" --set-query "('Age') SET ('30')"
+ExcelQueryCLI.exe update -q "update.yaml" -p 4
 ```
 
-**Complex query**
+
+## Delete Function
+
+Delete rows in Excel file based on the parameters provided
+
 ```bash
-ExcelQueryCLI.exe update -f "sample.xlsx" -f "sample2.xlsx"  -f "D:\\SampleDirectory" -s "Sheet1" --filter-query "('Name' OR 'Surname' OR 'Fullname') NOT_EQUALS ('John' OR 'Mark' OR 'Justin')" --set-query "('Age') SET ('30')" --set-query "('UserPermission') SET ('3')"
+ExcelQueryCLI.exe update -q <query-file-path> -p <parallelism>
+```
+
+### Parameters
+
+- `-q` or `--query` _(required)_
+  - The file or directory path to the yaml query file
+- `-p` or `--parallelism`
+  - The number of parallel threads to use for processing. Default is 1
+
+### Example
+
+```bash
+ExcelQueryCLI.exe delete -q "delete.yaml" -p 4
 ```
 
 ## License
@@ -116,14 +280,27 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog 
 
-
-### v1.5
+### v2.0
 - Dumped the OpenXML SDK and switched to EPPlus for better file handling
-- Added support for parallel processing with `--parallelism` parameter
-- Changed parameter name `--header-row-index` to `--header-row-number`
-- Added parameter `--start-row-number` to specify the row number to start processing
+- Reworked the query language to YAML instead of command parameters
+- Added support for multiple filter queries
+- Added support for multiple update queries
+- Added support for `AND` and `OR` operators in filter queries
+- Added support for parallel processing
+- Added support for setting header row number
+- Added support for setting start row number
+- Added 2 new compare operators `IS_NULL_OR_BLANK` and `IS_NOT_NULL_OR_BLANK`
 - Better separation of methods
-- Fixed a buf where the set query operator was not being applied to any other than SET operator
+- Improved error handling
+- Improved logging
+- Improved data type validation and conversion with YAML deserialization
+- Improved data validation
+- Removed first row update parameter
+- Updated syntax to support multiple column updates in query 
+- Implemented delete functionality
+- Added tests project 
+- Implemented backup feature
+- Refactored REPLACE, BETWEEN and NOT_BETWEEN operators
 
 ### v1.4
 - Added support for directory path
