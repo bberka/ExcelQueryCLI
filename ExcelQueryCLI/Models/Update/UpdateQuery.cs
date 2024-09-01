@@ -11,7 +11,7 @@ public sealed class UpdateQuery : IModel
   private string _column = string.Empty;
 
   [YamlMember(Alias = "column")]
-  [XmlElement("column")]
+  [XmlAttribute("column")]
   [JsonPropertyName("column")]
   public required string Column {
     get => _column;
@@ -19,12 +19,12 @@ public sealed class UpdateQuery : IModel
   }
 
   [YamlMember(Alias = "operator")]
-  [XmlElement("operator")]
+  [XmlAttribute("operator")]
   [JsonPropertyName("operator")]
   public required UpdateOperator UpdateOperator { get; set; }
 
   [YamlMember(Alias = "value")]
-  [XmlElement("value")]
+  [XmlAttribute("value")]
   [JsonPropertyName("value")]
   public required string Value { get; set; }
 

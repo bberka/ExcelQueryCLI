@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using ExcelQueryCLI.Data;
 using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Models.Delete;
@@ -23,7 +24,7 @@ public class EpPlusExcelQueryManager(byte parallelThreads) : IExcelQueryManager
                          if (query.Backup) ExcelTools.BackupFile(file);
 
                          internalRunUpdateQuery(file,
-                                                query.Sheets.Select(x => x.Value).ToList(),
+                                                query.Sheets,
                                                 query.Query);
                        }
                        catch (Exception ex) {
@@ -33,7 +34,7 @@ public class EpPlusExcelQueryManager(byte parallelThreads) : IExcelQueryManager
   }
 
   private void internalRunUpdateQuery(string filePath,
-                                      List<QuerySheetInformation> sheets,
+                                      QuerySheetInformation[] sheets,
                                       UpdateQueryInformation[] updateQueries) {
     Log.Information("Processing file: {file}", filePath);
     var excelPackage = new ExcelPackage(filePath);
@@ -151,7 +152,7 @@ public class EpPlusExcelQueryManager(byte parallelThreads) : IExcelQueryManager
                          if (query.Backup) ExcelTools.BackupFile(file);
 
                          internalRunDeleteQuery(file,
-                                                query.Sheets.Select(x => x.Value).ToList(),
+                                                query.Sheets,
                                                 query.Query);
                        }
                        catch (Exception ex) {
@@ -160,7 +161,7 @@ public class EpPlusExcelQueryManager(byte parallelThreads) : IExcelQueryManager
                      });
   }
 
-  private void internalRunDeleteQuery(string filePath, List<QuerySheetInformation> sheets, DeleteQueryInformation[] deleteQueries) {
+  private void internalRunDeleteQuery(string filePath,QuerySheetInformation[] sheets, DeleteQueryInformation[] deleteQueries) {
     Log.Information("Processing file: {file}", filePath);
     var excelPackage = new ExcelPackage(filePath);
     var workbook = excelPackage.Workbook;

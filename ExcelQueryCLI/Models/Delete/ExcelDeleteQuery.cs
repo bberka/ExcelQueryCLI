@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
@@ -20,7 +21,7 @@ public sealed class ExcelDeleteQuery : IModel
   [YamlMember(Alias = "sheets")]
   [XmlElement("sheets")]
   [JsonPropertyName("sheets")]
-  public required Dictionary<string, QuerySheetInformation> Sheets { get; set; } = null!;
+  public required QuerySheetInformation[] Sheets { get; set; } = null!;
 
   [YamlMember(Alias = "query")]
   [XmlElement("query")]
@@ -53,20 +54,30 @@ public sealed class ExcelDeleteQuery : IModel
   }
 
   public static ExcelDeleteQuery ParseJsonText(string text) {
-    return JsonConvert.DeserializeObject<ExcelDeleteQuery>(text) ?? throw new ArgumentException("Invalid JSON");
+    return JsonConvert.DeserializeObject<ExcelDeleteQuery>(text,
+                                                           settings: new JsonSerializerSettings() {
+                                                             Culture = CultureInfo.InvariantCulture,
+                                                           }) ?? throw new ArgumentException("Invalid JSON");
   }
 
   public static ExcelDeleteQuery ParseXmlText(string text) {
     var xmlSerializer = new XmlSerializer(typeof(ExcelDeleteQuery));
     using var reader = new StringReader(text);
+    xmlSerializer.UnknownAttribute += (sender, args) => throw new ArgumentException("Invalid XML" + args.Attr.Name);
+    xmlSerializer.UnknownElement += (sender, args) => throw new ArgumentException("Invalid XML" + args.Element.Name);
+    xmlSerializer.UnknownNode += (sender, args) => throw new ArgumentException("Invalid XML: " + args.Name);
     return (ExcelDeleteQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
   }
 
   public void Validate() {
+    if (Source == null) {
+      throw new ArgumentException("Source must be provided");
+    }
+
     if (Source.Length == 0)
       throw new ArgumentException("Source must be provided");
 
-    if (Sheets.Count == 0)
+    if (Sheets.Length == 0)
       throw new ArgumentException("Sheets must be provided");
 
     if (Query.Length == 0)
@@ -76,11 +87,11 @@ public sealed class ExcelDeleteQuery : IModel
     if (!isSourceUnique)
       throw new ArgumentException("Source paths must be unique");
 
-    var isSheetNamesUnique = Sheets.Keys.Distinct().Count() == Sheets.Count;
+    var isSheetNamesUnique = Sheets.Distinct().Count() == Sheets.Length;
     if (!isSheetNamesUnique)
       throw new ArgumentException("Sheet names must be unique");
 
-    foreach (var sheet in Sheets) sheet.Value.Validate();
+    foreach (var sheet in Sheets) sheet.Validate();
 
     foreach (var q in Query) q.Validate();
   }

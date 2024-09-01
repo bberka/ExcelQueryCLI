@@ -11,7 +11,7 @@ public sealed record QuerySheetInformation : IModel
   private string _name = null!;
 
   [YamlMember(Alias = "name")]
-  [XmlElement("name")]
+  [XmlAttribute("name")]
   [JsonPropertyName("name")]
   public required string Name {
     get => _name;
@@ -19,12 +19,12 @@ public sealed record QuerySheetInformation : IModel
   }
 
   [YamlMember(Alias = "header_row")]
-  [XmlElement("header_row")]
+  [XmlAttribute("header_row")]
   [JsonPropertyName("header_row")]
   public int HeaderRow { get; set; } = StaticSettings.DefaultHeaderRowNumber;
 
   [YamlMember(Alias = "start_row")] 
-  [XmlElement("start_row")]
+  [XmlAttribute("start_row")]
   [JsonPropertyName("start_row")]
   public int StartRow { get; set; } = StaticSettings.DefaultStartRowIndex;
 

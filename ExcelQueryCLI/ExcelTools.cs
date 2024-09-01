@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using ExcelQueryCLI.Common;
+using ExcelQueryCLI.Data;
 using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Static;
 using OfficeOpenXml;

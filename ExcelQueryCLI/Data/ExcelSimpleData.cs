@@ -1,6 +1,6 @@
 ﻿using OfficeOpenXml;
 
-namespace ExcelQueryCLI.Models;
+namespace ExcelQueryCLI.Data;
 
 public sealed record ExcelSimpleData(
   ExcelWorksheet Worksheet,

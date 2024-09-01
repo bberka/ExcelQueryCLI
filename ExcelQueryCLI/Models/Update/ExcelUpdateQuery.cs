@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
@@ -19,7 +20,7 @@ public sealed record ExcelUpdateQuery : IModel
   [YamlMember(Alias = "sheets")]
   [XmlElement("sheets")]
   [JsonPropertyName("sheets")]
-  public required Dictionary<string, QuerySheetInformation> Sheets { get; set; } = null!;
+  public required QuerySheetInformation[] Sheets { get; set; } = null!;
 
   [YamlMember(Alias = "query")]
   [XmlElement("query")]
@@ -56,7 +57,7 @@ public sealed record ExcelUpdateQuery : IModel
   }
 
   public static ExcelUpdateQuery ParseXmlText(string text) {
-    var xmlSerializer = new XmlSerializer(typeof(ExcelUpdateQuery));
+    var xmlSerializer = new XmlSerializer(typeof(ExcelUpdateQuery), new XmlRootAttribute("root"));
     using var reader = new StringReader(text);
     return (ExcelUpdateQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
   }
@@ -65,7 +66,7 @@ public sealed record ExcelUpdateQuery : IModel
     if (Source.Length == 0)
       throw new ArgumentException("Source must be provided");
 
-    if (Sheets.Count == 0)
+    if (Sheets.Length == 0)
       throw new ArgumentException("Sheets must be provided");
 
     if (Query.Length == 0)
@@ -75,11 +76,12 @@ public sealed record ExcelUpdateQuery : IModel
     if (!isSourceUnique)
       throw new ArgumentException("Source paths must be unique");
 
-    var isSheetNamesUnique = Sheets.Keys.Distinct().Count() == Sheets.Count;
+
+    var isSheetNamesUnique = Sheets.Distinct().Count() == Sheets.Length;
     if (!isSheetNamesUnique)
       throw new ArgumentException("Sheet names must be unique");
 
-    foreach (var sheet in Sheets) sheet.Value.Validate();
+    foreach (var sheet in Sheets) sheet.Validate();
 
     foreach (var update in Query) update.Validate();
   }

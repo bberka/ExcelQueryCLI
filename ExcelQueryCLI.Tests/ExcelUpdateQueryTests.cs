@@ -6,6 +6,139 @@ namespace ExcelQueryCLI.Tests;
 public sealed class ExcelUpdateQueryTests
 {
   [Test]
+  public void TestExcelQueryParseXMLText_Complex_Valid() {
+    const string json = """
+                        <root>
+                          <source>ExcelFile.xlsx</source>
+                          <source>ExcelFile2.xlsx</source>
+                          <source>Folder\ExcelFiles</source>
+                          <backup>true</backup>
+                          <sheets name="Employees Table" header_row="1" start_row="2"/>
+                          <sheets name="Salary Table"/>
+                          <sheets name="Address Table"/>
+                          <query>
+                            <update column="Fullname" operator="APPEND" value="John Doe"/>
+                            <update column="Department" operator="SET" value="HR"/>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <update column="Address" operator="SET" value="Turkey"/>
+                            <filter_merge>AND</filter_merge>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                            </filters>
+                            <filters column="FULLNAME" compare="EQUALS">
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <update column="Salary" operator="MULTIPLY" value="1.3"/>
+                          </query>
+                        </root>
+                        """;
+    Assert.DoesNotThrow(() => {
+      var excelQuery = ExcelUpdateQuery.ParseXmlText(json);
+      Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
+      Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
+      Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
+    });
+    Assert.Pass();
+  }
+
+  [Test]
+  public void TestExcelQueryParseJSONText_Complex_Valid() {
+    const string json = """
+                        {
+                          "source": [
+                            "ExcelFile.xlsx",
+                            "ExcelFile2.xlsx",
+                            "Folder\\ExcelFiles"
+                          ],
+                          "backup": true,
+                          "sheets": [
+                            {
+                              "name": "Employees Table",
+                              "header_row": "1",
+                              "start_row": "2"
+                            },
+                            {
+                              "name": "Salary Table"
+                            },
+                            {
+                              "name": "Address Table"
+                            }
+                          ],
+                          "query": [
+                            {
+                              "update": [
+                                {
+                                  "column": "Fullname",
+                                  "operator": "APPEND",
+                                  "value": "John Doe"
+                                }
+                              ],
+                              "filters": [
+                                {
+                                  "column": "NAME",
+                                  "compare": "EQUALS",
+                                  "values": [
+                                    "John",
+                                    "Mark"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "update": [
+                                {
+                                  "column": "Address",
+                                  "operator": "SET",
+                                  "value": "Turkey"
+                                }
+                              ],
+                              "filter_merge": "AND",
+                              "filters": [
+                                {
+                                  "column": "NAME",
+                                  "compare": "EQUALS",
+                                  "values": [
+                                    "John"
+                                  ]
+                                },
+                                {
+                                  "column": "FULLNAME",
+                                  "compare": "EQUALS",
+                                  "values": [
+                                    "Mark"
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "update": [
+                                {
+                                  "column": "Salary",
+                                  "operator": "MULTIPLY",
+                                  "value": "1.3"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                        """;
+    Assert.DoesNotThrow(() => {
+      var excelQuery = ExcelUpdateQuery.ParseJsonText(json);
+      Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
+      Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
+      Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
+    });
+    Assert.Pass();
+  }
+
+  [Test]
   public void TestExcelQueryParseYamlText_Complex_Valid() {
     const string yaml = """
                         source: # You can specify multiple files and directories
@@ -14,14 +147,11 @@ public sealed class ExcelUpdateQueryTests
                           - 'Folder\ExcelFiles'
                         backup: true # Backup files before updating
                         sheets:
-                          employee:
-                            name: 'Employees Table' # Name of the sheet
-                            header_row: '1' # Row number of the header
-                            start_row: '2' # Row number of the first data row
-                          salary:
-                            name: 'Salary Table'
-                          address:
-                            name: 'Address Table'
+                            - name: 'Employees Table' # Name of the sheet
+                              header_row: '1' # Row number of the header
+                              start_row: '2' # Row number of the first data row
+                            - name: 'Salary Table'
+                            - name: 'Address Table'
                         query:
                           - # With single filter
                             update:
@@ -64,7 +194,7 @@ public sealed class ExcelUpdateQueryTests
     Assert.DoesNotThrow(() => {
       var excelQuery = ExcelUpdateQuery.ParseYamlText(yaml);
       Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
-      Assert.That(excelQuery.Sheets, Has.Count.EqualTo(3));
+      Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
       Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
     });
     Assert.Pass();
@@ -76,8 +206,7 @@ public sealed class ExcelUpdateQueryTests
                         source:
                           - 'ExcelFile.xlsx'
                         sheets:
-                          employee:
-                            name: 'Employees Table'
+                          - name: 'Employees Table'
                         query:
                           - update:
                               - column: 'Salary'
@@ -87,7 +216,7 @@ public sealed class ExcelUpdateQueryTests
     Assert.DoesNotThrow(() => {
       var excelQuery = ExcelUpdateQuery.ParseYamlText(yaml);
       Assert.That(excelQuery.Source, Has.Length.EqualTo(1));
-      Assert.That(excelQuery.Sheets, Has.Count.EqualTo(1));
+      Assert.That(excelQuery.Sheets, Has.Length.EqualTo(1));
       Assert.That(excelQuery.Query, Has.Length.EqualTo(1));
       foreach (var VARIABLE in excelQuery.Query) Assert.That(VARIABLE.Filters, Is.Null);
     });
@@ -101,8 +230,7 @@ public sealed class ExcelUpdateQueryTests
                         source:
                           - 'ExcelFile.xlsx'
                         sheets:
-                          employee:
-                            name: 'Employees Table'
+                          - name: 'Employees Table'
                         query:
                           - update:
                               - column: 'Salary'
@@ -122,8 +250,7 @@ public sealed class ExcelUpdateQueryTests
                         source:
                           - 'ExcelFile.xlsx'
                         sheets:
-                          employee:
-                            name: 'Employees Table'
+                          - name: 'Employees Table'
                         query:
                           - update:
                             - column: 'Salary'
@@ -144,8 +271,7 @@ public sealed class ExcelUpdateQueryTests
                         source:
                           - 'ExcelFile.xlsx'
                         sheets:
-                          employee:
-                            name: 'Employees Table'
+                          - name: 'Employees Table'
                         query:
                           - update:
                             - column: 'Salary'
