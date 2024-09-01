@@ -299,6 +299,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+### v2.4
+- Fixed an issue where JSON property name was not working correctly
+- Fixed an issue where XML parsing was not working correctly due to wrong attribute usage
+- Fixed an issue where query validation were not working for JSON and XML files
+- Added more indepth tests
+
 ### v2.3
 - Fixed XML dictionary serialization issue
 - Refactored sheets model which caused syntax model change
