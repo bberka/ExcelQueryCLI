@@ -16,7 +16,7 @@ public sealed record ExcelUpdateQuery : IModel
   [YamlMember(Alias = "source")]
   [XmlElement("source")]
   [JsonProperty("source")]
-  public string[] Source { get; set; } = null!;
+  public string[] Source { get; set; } = [];
 
   [YamlMember(Alias = "sheets")]
   [XmlElement("sheets")]
@@ -72,9 +72,6 @@ public sealed record ExcelUpdateQuery : IModel
   }
 
   public void Validate() {
-    if (Source.Length == 0)
-      throw new ArgumentException("Source must be provided");
-
     if (Source == null) {
       throw new ArgumentException("Source must be provided");
     }
@@ -83,12 +80,17 @@ public sealed record ExcelUpdateQuery : IModel
       throw new ArgumentException("Sheets must be provided");
     }
 
+    if (Source.Length == 0)
+      throw new ArgumentException("Source must be provided");
+
     if (Sheets.Length == 0)
       throw new ArgumentException("Sheets must be provided");
 
     if (Query.Length == 0)
       throw new ArgumentException("Query must be provided");
 
+    Source = Source.Select(s => s.Trim()).ToArray();
+    
     var isSourceUnique = Source.Distinct().Count() == Source.Length;
     if (!isSourceUnique)
       throw new ArgumentException("Source paths must be unique");
