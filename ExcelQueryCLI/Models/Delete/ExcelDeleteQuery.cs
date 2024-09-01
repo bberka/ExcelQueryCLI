@@ -87,7 +87,6 @@ public sealed class ExcelDeleteQuery : IModel
     if (Sheets == null) {
       throw new ArgumentException("Sheets must be provided");
     }
-
     
     if (Source.Length == 0)
       throw new ArgumentException("Source must be provided");
@@ -98,6 +97,8 @@ public sealed class ExcelDeleteQuery : IModel
     if (Query.Length == 0)
       throw new ArgumentException("Query must be provided");
 
+    Source = Source.Select(s => s.Trim()).ToArray();
+    
     var isSourceUnique = Source.Distinct().Count() == Source.Length;
     if (!isSourceUnique)
       throw new ArgumentException("Source paths must be unique");
