@@ -304,6 +304,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+### v2.2
+- Fixed an issue where JSON and XML query files were not being read correctly
+
 ### v2.1
 
 - Added support for JSON and XML query files
