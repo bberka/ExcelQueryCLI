@@ -1,0 +1,46 @@
+﻿source: # You can specify multiple files and directories
+  - 'ExcelFile.xlsx'
+  - 'ExcelFile2.xlsx'
+  - 'Folder\ExcelFiles'
+backup: true # Backup files before updating
+sheets:
+  employee:
+    name: 'Employees Table' # Name of the sheet
+    header_row: '1' # Row number of the header
+    start_row: '2' # Row number of the first data row
+  salary:
+    name: 'Salary Table'
+  address:
+    name: 'Address Table'
+query:
+  - update: # With single filter
+      - column: 'Fullname' # Column name to update
+        operator: 'APPEND' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
+        value: 'John Doe' # Value to use for update
+      - column: 'Department' # Column name to update
+        operator: 'SET' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
+        value: 'HR' # Value to use for update
+    filters: # Filters to apply
+      - column: 'NAME'
+        compare: 'EQUALS'
+        values:
+          - 'John'
+          - 'Mark'
+  - update: # With multiple filters
+      column: 'Address' # Column name to update
+      operator: 'SET' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
+      value: 'Turkey' # Value to use for update
+    filter_merge: 'AND' # Operator to use for multiple filters, it does not have any effect when there is only one filter
+    filters: # Filters to apply
+      - column: 'NAME' # Multiple filters can be applied
+        compare: 'EQUALS'
+        values:
+          - 'John' # Value to compare
+      - column: 'FULLNAME'
+        compare: 'EQUALS'
+        values:
+          - 'Mark'
+  - update: # you can use without filter
+      - column: 'Salary'
+        operator: 'MULTIPLY'
+        value: '1.3'

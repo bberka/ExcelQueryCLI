@@ -1,0 +1,21 @@
+﻿source:
+  - 'ExcelFile.xlsx'
+sheets:
+  employee:
+    name: 'Employees Table'
+query:
+  - update:
+      - column: 'Salary'
+        operator: 'MULTIPLY'
+        value: '1.3'
+      - column: 'Manager'
+        operator: 'SET'
+        value: 'John Doe'
+    filter_merge: 'AND'
+    filters:
+      - column: 'Department'
+        operator: 'EQUALS'
+        value: 'HR'
+      - column: 'Location'
+        operator: 'EQUALS'
+        value: 'Turkey'

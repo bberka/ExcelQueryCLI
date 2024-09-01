@@ -1,0 +1,10 @@
+﻿source:
+  - 'ExcelFile.xlsx'
+sheets:
+  employee:
+    name: 'Employees Table'
+query:
+  - update:
+      - column: 'Salary'
+        operator: 'MULTIPLY'
+        value: '1.3'
