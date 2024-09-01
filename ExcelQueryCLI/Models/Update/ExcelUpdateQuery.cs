@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
@@ -14,22 +15,22 @@ public sealed record ExcelUpdateQuery : IModel
 {
   [YamlMember(Alias = "source")]
   [XmlElement("source")]
-  [JsonPropertyName("source")]
+  [JsonProperty("source")]
   public string[] Source { get; set; } = null!;
 
   [YamlMember(Alias = "sheets")]
   [XmlElement("sheets")]
-  [JsonPropertyName("sheets")]
+  [JsonProperty("sheets")]
   public required QuerySheetInformation[] Sheets { get; set; } = null!;
 
   [YamlMember(Alias = "query")]
   [XmlElement("query")]
-  [JsonPropertyName("query")]
+  [JsonProperty("query")]
   public required UpdateQueryInformation[] Query { get; set; } = [];
 
   [YamlMember(Alias = "backup")]
   [XmlElement("backup")]
-  [JsonPropertyName("backup")]
+  [JsonProperty("backup")]
   public bool Backup { get; set; } = StaticSettings.DefaultBackup;
 
   public static ExcelUpdateQuery ParseYamlText(string yaml) {
@@ -53,13 +54,21 @@ public sealed record ExcelUpdateQuery : IModel
   }
 
   public static ExcelUpdateQuery ParseJsonText(string text) {
-    return JsonConvert.DeserializeObject<ExcelUpdateQuery>(text) ?? throw new ArgumentException("Invalid JSON");
+    var q = JsonConvert.DeserializeObject<ExcelUpdateQuery>(text,
+                                                            settings: new JsonSerializerSettings() {
+                                                              Culture = CultureInfo.InvariantCulture,
+                                                              Converters =  { new Newtonsoft.Json.Converters.StringEnumConverter() }
+                                                            }) ?? throw new ArgumentException("Invalid JSON");
+    q.Validate();
+    return q;
   }
 
   public static ExcelUpdateQuery ParseXmlText(string text) {
     var xmlSerializer = new XmlSerializer(typeof(ExcelUpdateQuery), new XmlRootAttribute("root"));
     using var reader = new StringReader(text);
-    return (ExcelUpdateQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
+    var q = (ExcelUpdateQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
+    q.Validate();
+    return q;
   }
 
   public void Validate() {
@@ -69,11 +78,11 @@ public sealed record ExcelUpdateQuery : IModel
     if (Source == null) {
       throw new ArgumentException("Source must be provided");
     }
-    
+
     if (Sheets == null) {
       throw new ArgumentException("Sheets must be provided");
     }
-    
+
     if (Sheets.Length == 0)
       throw new ArgumentException("Sheets must be provided");
 

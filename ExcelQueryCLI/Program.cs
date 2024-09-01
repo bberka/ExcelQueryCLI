@@ -12,5 +12,8 @@ Log.Logger = new LoggerConfiguration()
 var version = typeof(Program).Assembly.GetName().Version;
 Log.Information("ExcelQueryCLI v{version}", version);
 
+#if DEBUG
+args = ["update", "-q", @"D:\test.xml"];
+#endif
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 CoconaApp.Run<ExcelQueryCoconaApp>(args);

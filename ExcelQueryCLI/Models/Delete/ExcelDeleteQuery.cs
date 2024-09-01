@@ -15,22 +15,22 @@ public sealed class ExcelDeleteQuery : IModel
 {
   [YamlMember(Alias = "source")]
   [XmlElement("source")]
-  [JsonPropertyName("source")]
+  [JsonProperty("source")]
   public string[] Source { get; set; } = null!;
 
   [YamlMember(Alias = "sheets")]
   [XmlElement("sheets")]
-  [JsonPropertyName("sheets")]
+  [JsonProperty("sheets")]
   public required QuerySheetInformation[] Sheets { get; set; } = null!;
 
   [YamlMember(Alias = "query")]
   [XmlElement("query")]
-  [JsonPropertyName("query")]
+  [JsonProperty("query")]
   public required DeleteQueryInformation[] Query { get; set; } = [];
 
   [YamlMember(Alias = "backup")]
   [XmlElement("backup")]
-  [JsonPropertyName("backup")]
+  [JsonProperty("backup")]
   public bool Backup { get; set; } = StaticSettings.DefaultBackup;
 
   public static ExcelDeleteQuery ParseYamlText(string yaml) {
@@ -54,10 +54,14 @@ public sealed class ExcelDeleteQuery : IModel
   }
 
   public static ExcelDeleteQuery ParseJsonText(string text) {
-    return JsonConvert.DeserializeObject<ExcelDeleteQuery>(text,
+    var q = JsonConvert.DeserializeObject<ExcelDeleteQuery>(text,
                                                            settings: new JsonSerializerSettings() {
                                                              Culture = CultureInfo.InvariantCulture,
+                                                             Converters =  { new Newtonsoft.Json.Converters.StringEnumConverter() }
                                                            }) ?? throw new ArgumentException("Invalid JSON");
+    
+    q.Validate();
+    return q;
   }
 
   public static ExcelDeleteQuery ParseXmlText(string text) {
@@ -66,7 +70,9 @@ public sealed class ExcelDeleteQuery : IModel
     xmlSerializer.UnknownAttribute += (sender, args) => throw new ArgumentException("Invalid XML" + args.Attr.Name);
     xmlSerializer.UnknownElement += (sender, args) => throw new ArgumentException("Invalid XML" + args.Element.Name);
     xmlSerializer.UnknownNode += (sender, args) => throw new ArgumentException("Invalid XML: " + args.Name);
-    return (ExcelDeleteQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
+    var q = (ExcelDeleteQuery?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
+    q.Validate();
+    return q;
   }
 
   public void Validate() {

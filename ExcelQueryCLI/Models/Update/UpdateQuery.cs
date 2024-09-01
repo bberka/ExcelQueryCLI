@@ -2,6 +2,7 @@
 using System.Xml.Serialization;
 using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
+using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models.Update;
@@ -12,7 +13,7 @@ public sealed class UpdateQuery : IModel
 
   [YamlMember(Alias = "column")]
   [XmlAttribute("column")]
-  [JsonPropertyName("column")]
+  [JsonProperty("column")]
   public required string Column {
     get => _column;
     set => _column = value.Trim();
@@ -20,12 +21,12 @@ public sealed class UpdateQuery : IModel
 
   [YamlMember(Alias = "operator")]
   [XmlAttribute("operator")]
-  [JsonPropertyName("operator")]
+  [JsonProperty("operator")]
   public required UpdateOperator UpdateOperator { get; set; }
 
   [YamlMember(Alias = "value")]
   [XmlAttribute("value")]
-  [JsonPropertyName("value")]
+  [JsonProperty("value")]
   public required string Value { get; set; }
 
   public void Validate() {

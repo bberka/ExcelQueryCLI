@@ -2,6 +2,7 @@
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
+using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models;
@@ -12,7 +13,7 @@ public sealed record QuerySheetInformation : IModel
 
   [YamlMember(Alias = "name")]
   [XmlAttribute("name")]
-  [JsonPropertyName("name")]
+  [JsonProperty("name")]
   public required string Name {
     get => _name;
     set => _name = value.Trim();
@@ -20,12 +21,12 @@ public sealed record QuerySheetInformation : IModel
 
   [YamlMember(Alias = "header_row")]
   [XmlAttribute("header_row")]
-  [JsonPropertyName("header_row")]
+  [JsonProperty("header_row")]
   public int HeaderRow { get; set; } = StaticSettings.DefaultHeaderRowNumber;
 
   [YamlMember(Alias = "start_row")]
   [XmlAttribute("start_row")]
-  [JsonPropertyName("start_row")]
+  [JsonProperty("start_row")]
   public int StartRow { get; set; } = StaticSettings.DefaultStartRowIndex;
 
   public void Validate() {

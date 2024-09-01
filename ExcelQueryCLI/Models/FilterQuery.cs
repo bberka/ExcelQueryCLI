@@ -3,6 +3,7 @@ using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
+using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models;
@@ -10,22 +11,22 @@ namespace ExcelQueryCLI.Models;
 public sealed record FilterQuery : IModel
 {
   [YamlMember(Alias = "column")]
-  [XmlElement("column")]
-  [JsonPropertyName("column")]
-  public required string Column { get; set; } = null!;
+  [XmlAttribute("column")]
+  [JsonProperty("column")]
+  public required string Column { get; set; }
 
   [YamlMember(Alias = "values")]
   [XmlElement("values")]
-  [JsonPropertyName("values")]
+  [JsonProperty("values")]
   public string[] Values { get; set; } = [];
 
   [YamlMember(Alias = "compare")]
-  [XmlElement("compare")]
-  [JsonPropertyName("compare")]
+  [XmlAttribute("compare")]
+  [JsonProperty("compare")]
   public required CompareOperator CompareOperator { get; set; }
 
   public void Validate() {
-    if (string.IsNullOrWhiteSpace(Column))
+    if (string.IsNullOrWhiteSpace(Column) || string.IsNullOrEmpty(Column) || Column is null)
       throw new ArgumentException("Column cannot be empty");
 
 
