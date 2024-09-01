@@ -1,4 +1,6 @@
-﻿using ExcelQueryCLI.Interfaces;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
+using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
 using YamlDotNet.Serialization;
 
@@ -7,9 +9,13 @@ namespace ExcelQueryCLI.Models.Delete;
 public sealed class DeleteQueryInformation : IModel
 {
   [YamlMember(Alias = "filter_merge")]
+  [XmlElement("filter_merge")]
+  [JsonPropertyName("filter_merge")]
   public MergeOperator? FilterMergeOperator { get; set; }
 
   [YamlMember(Alias = "filters")]
+  [XmlElement("filters")]
+  [JsonPropertyName("filters")]
   public FilterQuery[]? Filters { get; set; }
 
   public void Validate() {

@@ -1,4 +1,6 @@
-﻿using ExcelQueryCLI.Common;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
+using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
 using YamlDotNet.Serialization;
@@ -8,12 +10,18 @@ namespace ExcelQueryCLI.Models;
 public sealed record FilterQuery : IModel
 {
   [YamlMember(Alias = "column")]
+  [XmlElement("column")]
+  [JsonPropertyName("column")]
   public required string Column { get; set; } = null!;
 
   [YamlMember(Alias = "values")]
+  [XmlElement("values")]
+  [JsonPropertyName("values")]
   public string[] Values { get; set; } = [];
 
   [YamlMember(Alias = "compare")]
+  [XmlElement("compare")]
+  [JsonPropertyName("compare")]
   public required CompareOperator CompareOperator { get; set; }
 
   public void Validate() {

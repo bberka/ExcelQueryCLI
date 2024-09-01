@@ -1,4 +1,5 @@
-﻿using System.Xml.Serialization;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Models.Update;
@@ -12,15 +13,23 @@ namespace ExcelQueryCLI.Models.Delete;
 public sealed class ExcelDeleteQuery : IModel
 {
   [YamlMember(Alias = "source")]
+  [XmlElement("source")]
+  [JsonPropertyName("source")]
   public string[] Source { get; set; } = null!;
 
   [YamlMember(Alias = "sheets")]
+  [XmlElement("sheets")]
+  [JsonPropertyName("sheets")]
   public required Dictionary<string, QuerySheetInformation> Sheets { get; set; } = null!;
 
   [YamlMember(Alias = "query")]
+  [XmlElement("query")]
+  [JsonPropertyName("query")]
   public required DeleteQueryInformation[] Query { get; set; } = [];
 
   [YamlMember(Alias = "backup")]
+  [XmlElement("backup")]
+  [JsonPropertyName("backup")]
   public bool Backup { get; set; } = StaticSettings.DefaultBackup;
 
   public static ExcelDeleteQuery ParseYamlText(string yaml) {

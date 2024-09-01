@@ -1,4 +1,6 @@
-﻿using ExcelQueryCLI.Common;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
+using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
 using YamlDotNet.Serialization;
 
@@ -9,15 +11,21 @@ public sealed record QuerySheetInformation : IModel
   private string _name = null!;
 
   [YamlMember(Alias = "name")]
+  [XmlElement("name")]
+  [JsonPropertyName("name")]
   public required string Name {
     get => _name;
     set => _name = value.Trim();
   }
 
   [YamlMember(Alias = "header_row")]
+  [XmlElement("header_row")]
+  [JsonPropertyName("header_row")]
   public int HeaderRow { get; set; } = StaticSettings.DefaultHeaderRowNumber;
 
-  [YamlMember(Alias = "start_row")]
+  [YamlMember(Alias = "start_row")] 
+  [XmlElement("start_row")]
+  [JsonPropertyName("start_row")]
   public int StartRow { get; set; } = StaticSettings.DefaultStartRowIndex;
 
   public void Validate() {

@@ -1,4 +1,6 @@
-﻿using ExcelQueryCLI.Interfaces;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
+using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
 using YamlDotNet.Serialization;
 
@@ -9,15 +11,21 @@ public sealed class UpdateQuery : IModel
   private string _column = string.Empty;
 
   [YamlMember(Alias = "column")]
+  [XmlElement("column")]
+  [JsonPropertyName("column")]
   public required string Column {
     get => _column;
     set => _column = value.Trim();
   }
 
   [YamlMember(Alias = "operator")]
+  [XmlElement("operator")]
+  [JsonPropertyName("operator")]
   public required UpdateOperator UpdateOperator { get; set; }
 
   [YamlMember(Alias = "value")]
+  [XmlElement("value")]
+  [JsonPropertyName("value")]
   public required string Value { get; set; }
 
   public void Validate() {

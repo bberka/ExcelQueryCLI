@@ -1,4 +1,5 @@
-﻿using System.Xml.Serialization;
+﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
@@ -11,15 +12,23 @@ namespace ExcelQueryCLI.Models.Update;
 public sealed record ExcelUpdateQuery : IModel
 {
   [YamlMember(Alias = "source")]
+  [XmlElement("source")]
+  [JsonPropertyName("source")]
   public string[] Source { get; set; } = null!;
 
   [YamlMember(Alias = "sheets")]
+  [XmlElement("sheets")]
+  [JsonPropertyName("sheets")]
   public required Dictionary<string, QuerySheetInformation> Sheets { get; set; } = null!;
 
   [YamlMember(Alias = "query")]
+  [XmlElement("query")]
+  [JsonPropertyName("query")]
   public required UpdateQueryInformation[] Query { get; set; } = [];
 
   [YamlMember(Alias = "backup")]
+  [XmlElement("backup")]
+  [JsonPropertyName("backup")]
   public bool Backup { get; set; } = StaticSettings.DefaultBackup;
 
   public static ExcelUpdateQuery ParseYamlText(string yaml) {
