@@ -6,5 +6,5 @@ sheets:
 query:
   - update:
       - column: 'Salary'
-        operator: 'MULTIPLY'
+        compare: 'MULTIPLY'
         value: '1.3'

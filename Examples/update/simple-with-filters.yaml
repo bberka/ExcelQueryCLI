@@ -14,8 +14,8 @@ query:
     filter_merge: 'AND'
     filters:
       - column: 'Department'
-        operator: 'EQUALS'
+        compare: 'EQUALS'
         value: 'HR'
       - column: 'Location'
-        operator: 'EQUALS'
+        compare: 'EQUALS'
         value: 'Turkey'

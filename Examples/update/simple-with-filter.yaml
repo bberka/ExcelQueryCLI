@@ -11,10 +11,10 @@ query:
     filter_merge: 'AND' # Operator to use for multiple filters, it does not have any effect when there is only one filter
     filters:
       - column: 'Department'
-        operator: 'EQUALS'
+        compare: 'EQUALS'
         values:
           - 'HR'
       - column: 'Location'
-        operator: 'NOT_EQUALS'
+        compare: 'NOT_EQUALS'
         values:
           - 'Turkey'
