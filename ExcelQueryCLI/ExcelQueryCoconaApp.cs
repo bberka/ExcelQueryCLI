@@ -29,7 +29,7 @@ public sealed class ExcelQueryCoconaApp
       q = ExcelUpdateQuery.ParseFile(filePath, fileType);
     }
     catch (Exception ex) {
-      Log.Error("Error parsing Yaml file: {Message}", ex.Message);
+      Log.Error("Error parsing query file: {Message}", ex.Message);
       return;
     }
 
@@ -61,7 +61,7 @@ public sealed class ExcelQueryCoconaApp
       q = ExcelDeleteQuery.ParseFile(filePath, fileType);
     }
     catch (Exception ex) {
-      Log.Error("Error parsing Yaml file: {Message}", ex.Message);
+      Log.Error("Error parsing query file: {Message}", ex.Message);
       return;
     }
 
