@@ -29,7 +29,7 @@ public sealed record ExcelQueryRootUpdate
                      .Where(x => !string.IsNullOrEmpty(x) && !string.IsNullOrWhiteSpace(x))
                      .Distinct()
                      .ToArray() ?? [];
-      _source.Throw().IfEmpty().IfHasNullElements();
+      _source.Throw("Source must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -43,7 +43,8 @@ public sealed record ExcelQueryRootUpdate
       _sheets = value?.Select(x => x with { Name = x.Name.Trim() })
                      .DistinctBy(x => x.Name)
                      .ToArray() ?? [];
-      _sheets.Throw().IfHasNullElements();
+      _sheets.Throw("Sheets can not contain null elements")
+             .IfNull(x => x).IfHasNullElements();
     }
   }
 
@@ -55,7 +56,7 @@ public sealed record ExcelQueryRootUpdate
     [MemberNotNull(nameof(_query))]
     set {
       _query = value?.ToArray() ?? [];
-      _query.Throw().IfEmpty().IfHasNullElements();
+      _query.Throw("Query must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 

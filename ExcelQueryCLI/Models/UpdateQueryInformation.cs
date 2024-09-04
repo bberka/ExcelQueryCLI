@@ -20,7 +20,7 @@ public sealed record UpdateQueryInformation
     get => _update;
     set {
       _update = value?.Distinct().ToArray() ?? [];
-      _update.Throw().IfNull(x => x).IfEmpty().IfHasNullElements();
+      _update.Throw("Update query must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -36,7 +36,7 @@ public sealed record UpdateQueryInformation
     get => _filters;
     set {
       _filters = value?.Distinct().ToArray() ?? [];
-      _filters.Throw().IfNull(x => x).IfHasNullElements();
+      _filters.Throw("Filters must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -47,7 +47,7 @@ public sealed record UpdateQueryInformation
     get => _sheets;
     set {
       _sheets = value?.DistinctBy(x => x.Name).ToArray() ?? [];
-      _sheets.Throw().IfNull(x => x).IfHasNullElements();
+      _sheets.Throw("Sheets must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 

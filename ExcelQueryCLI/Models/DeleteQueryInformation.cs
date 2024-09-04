@@ -24,7 +24,7 @@ public sealed class DeleteQueryInformation
     get => _filters;
     set {
       _filters = value;
-      _filters.Throw().IfNull(x => x).IfEmpty().IfHasNullElements();
+      _filters.Throw("Filters must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -37,7 +37,7 @@ public sealed class DeleteQueryInformation
       _sheets = value?.Select(x => x with { Name = x.Name.Trim() })
                      .DistinctBy(x => x.Name)
                      .ToArray() ?? [];
-      _sheets.Throw().IfNull(x => x).IfHasNullElements();
+      _sheets.Throw("Sheets must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 

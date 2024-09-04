@@ -21,7 +21,7 @@ public sealed class UpdateQueryRecord
     get => _column;
     set {
       _column = value?.Trim() ?? string.Empty;
-      _column.Throw().IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
+      _column.Throw("Column must be provided").IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
     }
   }
 
@@ -32,7 +32,7 @@ public sealed class UpdateQueryRecord
     get => _updateOperator;
     set {
       _updateOperator = value;
-      _updateOperator.ThrowIfNull();
+      _updateOperator.ThrowIfNull("Operator must be provided");
     }
   }
 
@@ -44,7 +44,7 @@ public sealed class UpdateQueryRecord
     [MemberNotNull(nameof(_value))]
     set {
       _value = value?.Trim() ?? string.Empty;
-      _value.ThrowIfNull();
+      _value.ThrowIfNull("Value must not be null");
     }
   }
 

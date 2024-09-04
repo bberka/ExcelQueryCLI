@@ -17,7 +17,7 @@ public sealed class ValuesListDefinition
     get => _key;
     set {
       _key = value.Trim().Replace(" ","");
-      _key.Throw().IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
+      _key.Throw("Key must be provided").IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
     }
   }
 
@@ -31,7 +31,7 @@ public sealed class ValuesListDefinition
                      .Where(x => !string.IsNullOrEmpty(x) && !string.IsNullOrWhiteSpace(x))
                      .Distinct()
                      .ToArray() ?? [];
-      _values.Throw().IfNull(x => x).IfHasNullElements().IfEmpty();
+      _values.Throw("Values must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 

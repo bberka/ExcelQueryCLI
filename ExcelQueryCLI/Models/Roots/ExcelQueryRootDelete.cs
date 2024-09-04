@@ -30,7 +30,7 @@ public sealed class ExcelQueryRootDelete
                      .Where(x => !string.IsNullOrEmpty(x) && !string.IsNullOrWhiteSpace(x))
                      .Distinct()
                      .ToArray() ?? [];
-      _source.Throw().IfEmpty().IfHasNullElements();
+      _source.Throw().IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -44,7 +44,7 @@ public sealed class ExcelQueryRootDelete
       _sheets = value?.Select(x => x with { Name = x.Name.Trim() })
                      .DistinctBy(x => x.Name)
                      .ToArray() ?? [];
-      _sheets.Throw().IfHasNullElements();
+      _sheets.Throw().IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -56,7 +56,7 @@ public sealed class ExcelQueryRootDelete
     [MemberNotNull(nameof(_query))]
     set {
       _query = value ?? [];
-      _query.Throw().IfEmpty().IfHasNullElements();
+      _query.Throw().IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
 
@@ -102,6 +102,7 @@ public sealed class ExcelQueryRootDelete
     Log.Verbose("Validated YAML: {@yamlObject}", yamlObject);
     return yamlObject;
   }
+
   public static ExcelQueryRootDelete ParseJsonText(string text) {
     var q = JsonConvert.DeserializeObject<ExcelQueryRootDelete>(text,
                                                                 settings: new JsonSerializerSettings() {
@@ -134,7 +135,7 @@ public sealed class ExcelQueryRootDelete
 
     if (Sheets.Length == 0) {
       foreach (var q in Query) {
-        q.Throw().IfEmpty(x => x.Sheets);
+        q.Throw("Sheet must be provided").IfEmpty(x => x.Sheets);
       }
     }
   }

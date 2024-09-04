@@ -19,7 +19,7 @@ public sealed record SheetRecord
     get => _name;
     set {
       _name = value?.Trim() ?? string.Empty;
-      _name.Throw().IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
+      _name.Throw("Name must be provided").IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
     }
   }
 
@@ -32,7 +32,7 @@ public sealed record SheetRecord
       _headerRow = value < 1
                      ? StaticSettings.DefaultStartRowIndex
                      : value;
-      _headerRow.Throw().IfTrue(x => HeaderRow >= StartRow, "HeaderRow must be smaller than StartRow");
+      _headerRow.Throw("HeaderRow must be smaller than StartRow").IfTrue(x => HeaderRow >= StartRow);
     }
   }
 
