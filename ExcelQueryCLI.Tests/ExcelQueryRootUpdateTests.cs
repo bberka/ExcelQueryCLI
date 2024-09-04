@@ -1,10 +1,9 @@
-﻿using ExcelQueryCLI.Models;
-using ExcelQueryCLI.Models.Update;
+﻿using ExcelQueryCLI.Models.Roots;
 using ExcelQueryCLI.Static;
 
 namespace ExcelQueryCLI.Tests;
 
-public sealed class ExcelUpdateQueryTests
+public sealed class ExcelQueryRootUpdateTests
 {
   [Test]
   public void TestExcelQueryParseXMLText_Complex_Valid() {
@@ -40,7 +39,7 @@ public sealed class ExcelUpdateQueryTests
                           </query>
                         </root>
                         """;
-    var excelQuery = ExcelUpdateQuery.ParseXmlText(json);
+    var excelQuery = ExcelQueryRootUpdate.ParseXmlText(json);
     Assert.That(excelQuery.Backup, Is.True);
     Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
     Assert.That(excelQuery.Source, Has.Member("ExcelFile.xlsx"));
@@ -77,6 +76,84 @@ public sealed class ExcelUpdateQueryTests
     Assert.That(excelQuery.Query[2].Update?[0].Value, Is.EqualTo("1.3"));
     Assert.Pass();
   }
+
+  [Test]
+  public void TestExcelQueryParseXMLText_Complex_Valid2() {
+    const string json = """
+                        <root>
+                          <source>ExcelFile.xlsx</source>
+                          <source>ExcelFile2.xlsx</source>
+                          <source>Folder\ExcelFiles</source>
+                          <backup>true</backup>
+                          <query>
+                            <sheets name="Employees Table" header_row="1" start_row="2"/>
+                            <update column="Fullname" operator="APPEND" value="John Doe"/>
+                            <update column="Department" operator="SET" value="HR"/>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Address Table"/>
+                            <update column="Address" operator="SET" value="Turkey"/>
+                            <filter_merge>AND</filter_merge>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                            </filters>
+                            <filters column="FULLNAME" compare="NOT_EQUALS">
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Address Table"/>
+                            <update column="Salary" operator="MULTIPLY" value="1.3"/>
+                          </query>
+                        </root>
+                        """;
+    var excelQuery = ExcelQueryRootUpdate.ParseXmlText(json);
+    Assert.That(excelQuery.Backup, Is.True);
+    Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Source, Has.Member("ExcelFile.xlsx"));
+    Assert.That(excelQuery.Source, Has.Member("ExcelFile2.xlsx"));
+    Assert.That(excelQuery.Source, Has.Member("Folder\\ExcelFiles"));
+    Assert.That(excelQuery.Sheets, Has.Length.EqualTo(0));
+    Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
+    Assert.That(excelQuery.Query[0].Filters?[0].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[0].Filters?[0].Column, Is.EqualTo("NAME"));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Length.EqualTo(2));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Member("John"));
+    Assert.That(excelQuery.Query[0].Filters?[0].Values, Has.Member("Mark"));
+    Assert.That(excelQuery.Query[0].Update?[0].Column, Is.EqualTo("Fullname"));
+    Assert.That(excelQuery.Query[0].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.APPEND));
+    Assert.That(excelQuery.Query[0].Update?[0].Value, Is.EqualTo("John Doe"));
+    Assert.That(excelQuery.Query[0].Update?[1].Column, Is.EqualTo("Department"));
+    Assert.That(excelQuery.Query[0].Update?[1].UpdateOperator, Is.EqualTo(UpdateOperator.SET));
+    Assert.That(excelQuery.Query[0].Update?[1].Value, Is.EqualTo("HR"));
+    Assert.That(excelQuery.Query[0].Sheets?[0].Name, Is.EqualTo("Employees Table"));
+
+
+    Assert.That(excelQuery.Query[1].Filters?[0].CompareOperator, Is.EqualTo(CompareOperator.EQUALS));
+    Assert.That(excelQuery.Query[1].Filters?[0].Column, Is.EqualTo("NAME"));
+    Assert.That(excelQuery.Query[1].Filters?[0].Values, Has.Length.EqualTo(1));
+    Assert.That(excelQuery.Query[1].Filters?[0].Values, Has.Member("John"));
+    Assert.That(excelQuery.Query[1].Filters?[1].CompareOperator, Is.EqualTo(CompareOperator.NOT_EQUALS));
+    Assert.That(excelQuery.Query[1].Filters?[1].Column, Is.EqualTo("FULLNAME"));
+    Assert.That(excelQuery.Query[1].Filters?[1].Values, Has.Length.EqualTo(1));
+    Assert.That(excelQuery.Query[1].Filters?[1].Values, Has.Member("Mark"));
+    Assert.That(excelQuery.Query[1].Update?[0].Column, Is.EqualTo("Address"));
+    Assert.That(excelQuery.Query[1].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.SET));
+    Assert.That(excelQuery.Query[1].Update?[0].Value, Is.EqualTo("Turkey"));
+    Assert.That(excelQuery.Query[1].Sheets?[0].Name, Is.EqualTo("Address Table"));
+
+
+    Assert.That(excelQuery.Query[2].Update?[0].Column, Is.EqualTo("Salary"));
+    Assert.That(excelQuery.Query[2].Update?[0].UpdateOperator, Is.EqualTo(UpdateOperator.MULTIPLY));
+    Assert.That(excelQuery.Query[2].Update?[0].Value, Is.EqualTo("1.3"));
+
+    Assert.Pass();
+  }
+
 
   [Test]
   public void TestExcelQueryParseJSONText_Complex_Valid() {
@@ -159,7 +236,7 @@ public sealed class ExcelUpdateQueryTests
                           ]
                         }
                         """;
-    var excelQuery = ExcelUpdateQuery.ParseJsonText(json);
+    var excelQuery = ExcelQueryRootUpdate.ParseJsonText(json);
     Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
     Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
     Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
@@ -254,7 +331,7 @@ public sealed class ExcelUpdateQueryTests
                                 value: '1.3'
                         """;
     Assert.DoesNotThrow(() => {
-      var excelQuery = ExcelUpdateQuery.ParseYamlText(yaml);
+      var excelQuery = ExcelQueryRootUpdate.ParseYamlText(yaml);
       Assert.That(excelQuery.Source, Has.Length.EqualTo(3));
       Assert.That(excelQuery.Sheets, Has.Length.EqualTo(3));
       Assert.That(excelQuery.Query, Has.Length.EqualTo(3));
@@ -276,11 +353,11 @@ public sealed class ExcelUpdateQueryTests
                                 value: '1.3'
                         """;
     Assert.DoesNotThrow(() => {
-      var excelQuery = ExcelUpdateQuery.ParseYamlText(yaml);
+      var excelQuery = ExcelQueryRootUpdate.ParseYamlText(yaml);
       Assert.That(excelQuery.Source, Has.Length.EqualTo(1));
       Assert.That(excelQuery.Sheets, Has.Length.EqualTo(1));
       Assert.That(excelQuery.Query, Has.Length.EqualTo(1));
-      foreach (var VARIABLE in excelQuery.Query) Assert.That(VARIABLE.Filters, Is.Null);
+      foreach (var VARIABLE in excelQuery.Query) Assert.That(VARIABLE.Filters, Is.Empty);
     });
     Assert.Pass();
   }
@@ -302,7 +379,7 @@ public sealed class ExcelUpdateQueryTests
                                 operator: 'DIVIDE'
                                 value: '3'
                         """;
-    Assert.Throws<ArgumentException>(() => { _ = ExcelUpdateQuery.ParseYamlText(yaml); }, "Update column names must be unique");
+    Assert.Throws<ArgumentException>(() => { _ = ExcelQueryRootUpdate.ParseYamlText(yaml); }, "Update column names must be unique");
     Assert.Pass();
   }
 
@@ -320,7 +397,7 @@ public sealed class ExcelUpdateQueryTests
                               value: 'qeqew'
                         """;
     Assert.Throws<ArgumentException>(() => {
-                                       var a = ExcelUpdateQuery.ParseYamlText(yaml);
+                                       var a = ExcelQueryRootUpdate.ParseYamlText(yaml);
                                        Console.WriteLine();
                                      },
                                      "MULTIPLY operator requires a number value");
@@ -340,7 +417,228 @@ public sealed class ExcelUpdateQueryTests
                               operator: 'APPEND'
                               value: ''
                         """;
-    Assert.Throws<ArgumentException>(() => { _ = ExcelUpdateQuery.ParseYamlText(yaml); }, "APPEND operator requires a non-empty value");
+    Assert.Throws<ArgumentException>(() => { _ = ExcelQueryRootUpdate.ParseYamlText(yaml); }, "APPEND operator requires a non-empty value");
+    Assert.Pass();
+  }
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Invalid4() {
+    const string yaml = """
+                        <root>
+                          <source>ExcelFile.xlsx</source>
+                          <source>ExcelFile2.xlsx</source>
+                          <source>Folder\ExcelFiles</source>
+                          <backup>true</backup>
+                          <query>
+                            <update column="Fullname" operator="APPEND" value="John Doe"/>
+                            <update column="Department" operator="SET" value="HR"/>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Salary Table"/>
+                            <update column="Address" operator="SET" value="Turkey"/>
+                            <filter_merge>AND</filter_merge>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                            </filters>
+                            <filters column="FULLNAME" compare="EQUALS">
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <update column="Salary" operator="MULTIPLY" value="1.3"/>
+                          </query>
+                        </root>
+                        """;
+    Assert.Throws<ArgumentException>(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
+    Assert.Pass();
+  }
+
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Invalid5() {
+    const string yaml = """
+                        <root>
+                          <sheets name="Salary Table"/>
+                          <query>
+                            <update column="Fullname" operator="APPEND" value="John Doe"/>
+                            <update column="Department" operator="SET" value="HR"/>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Salary Table"/>
+                            <update column="Address" operator="SET" value="Turkey"/>
+                            <filter_merge>AND</filter_merge>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                            </filters>
+                            <filters column="FULLNAME" compare="EQUALS">
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <update column="Salary" operator="MULTIPLY" value="1.3"/>
+                          </query>
+                        </root>
+                        """;
+    Assert.Throws<InvalidOperationException>(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
+    Assert.Pass();
+  }
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Valid() {
+    const string yaml = """
+                        <root>
+                          <source>ExcelFile.xlsx</source>
+                          <sheets name="Salary Table"/>
+                          <query>
+                            <update column="Fullname" operator="APPEND" value="John Doe"/>
+                            <update column="Department" operator="SET" value="HR"/>
+                            <filters column="NAME" compare="IS_NULL_OR_BLANK">
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Salary Table"/>
+                            <update column="Address" operator="SET" value="Turkey"/>
+                            <filter_merge>AND</filter_merge>
+                            <filters column="NAME" compare="IS_NOT_NULL_OR_BLANK">
+                            </filters>
+                            <filters column="FULLNAME" compare="EQUALS">
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <update column="Salary" operator="MULTIPLY" value="1.3"/>
+                          </query>
+                        </root>
+                        """;
+
+    Assert.DoesNotThrow(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
+    Assert.Pass();
+  }
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Valid2() {
+    const string yaml = """
+                        <root>
+                        <source>ExcelFile.xlsx</source>
+                          <sheets name="Salary Table"/>
+                          <query>
+                            <update column="Fullname" operator="REPLACE" value="John|>|Doe"/>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Salary Table"/>
+                            <update column="Address" operator="SET" value="Turkey"/>
+                            <filter_merge>AND</filter_merge>
+                            <filters column="NAME" compare="EQUALS">
+                              <values>John</values>
+                            </filters>
+                            <filters column="FULLNAME" compare="EQUALS">
+                              <values>Mark</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <update column="Salary" operator="MULTIPLY" value="1.3"/>
+                          </query>
+                        </root>
+                        """;
+    Assert.DoesNotThrow(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
+    Assert.Pass();
+  }
+
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Valid3() {
+    const string yaml = """
+                        <root>
+                        <source>ExcelFile.xlsx</source>
+                          <sheets name="Salary Table"/>
+                          <query>
+                            <update column="Fullname" operator="REPLACE" value="John|>|"/>
+                            <filter_merge>OR</filter_merge>
+                            <filters column="Salary" compare="BETWEEN">
+                              <values>2000-3000</values>
+                            </filters>
+                            <filters column="Salary" compare="NOT_BETWEEN">
+                              <values>2000-3000</values>
+                            </filters>
+                            <filters column="Salary" compare="GREATER_THAN">
+                              <values>2000</values>
+                            </filters>
+                            <filters column="Salary" compare="LESS_THAN">
+                              <values>2000</values>
+                            </filters>
+                            <filters column="Salary" compare="GREATER_THAN_OR_EQUAL">
+                              <values>2000</values>
+                            </filters>
+                            <filters column="Salary" compare="LESS_THAN_OR_EQUAL">
+                              <values>2000</values>
+                            </filters>
+                            <filters column="Salary" compare="LESS_THAN_OR_EQUAL">
+                              <values>2000</values>
+                            </filters>
+                          </query>
+                        </root>
+                        """;
+    Assert.DoesNotThrow(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
+    Assert.Pass();
+  }
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Invalid6() {
+    const string yaml = """
+                        <root>
+                        <source>ExcelFile.xlsx</source>
+                          <sheets name="Salary Table"/>
+                          <query>
+                            <update column="Fullname" operator="REPLACE" value="John|>|"/>
+                            <filter_merge>OR</filter_merge>
+                            <filters column="Salary" compare="GREATER_THAN">
+                              <values>2000asdwqe</values>
+                            </filters>
+                           
+                          </query>
+                        </root>
+                        """;
+    Assert.Throws<ArgumentException>(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
+    Assert.Pass();
+  }
+
+
+  [Test]
+  public void TestExcelQueryParseSimpleXMLText_Valid4() {
+    const string yaml = """
+                        <root>
+                          <source>ExcelFile.xlsx</source>
+                          <query>
+                            <sheets name="Salary Table" />
+                            <update column="Fullname" operator="REPLACE" value="John|>|" />
+                            <filter_merge>OR</filter_merge>
+                            <filters column="Salary" compare="BETWEEN">
+                              <values>2000-3000</values>
+                            </filters>
+                          </query>
+                          <query>
+                            <sheets name="Salary Table" />
+                            <update column="Fullname" operator="REPLACE" value="John|>|" />
+                            <filter_merge>OR</filter_merge>
+                            <filters column="Salary" compare="BETWEEN">
+                              <values>2000-3000</values>
+                            </filters>
+                          </query>
+                        </root>
+                        """;
+    Assert.DoesNotThrow(() => { _ = ExcelQueryRootUpdate.ParseXmlText(yaml); });
     Assert.Pass();
   }
 }
