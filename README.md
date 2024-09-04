@@ -392,7 +392,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Fixed an issue where duplicated source files can be passed when passing directories
 - Update cell function now checks if old value is same as new value before updating resulting in correct update count
 - Added support for defining and reusing values in query files (values_def element)
-
+- Added 'Throw' library for better error handling
 ### v2.4
 
 - Fixed an issue where JSON property name was not working correctly
