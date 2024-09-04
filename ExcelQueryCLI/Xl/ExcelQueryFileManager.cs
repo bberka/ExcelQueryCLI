@@ -8,17 +8,30 @@ using Throw;
 
 namespace ExcelQueryCLI.Xl;
 
-public class ExcelQueryFileUpdateManager(
+public class ExcelQueryFileManager(
   string FilePath,
   SheetRecord[] Sheets,
-  UpdateQueryInformation[] UpdateQueries)
+  UpdateQueryInformation[] UpdateQueries,
+  DeleteQueryInformation[] DeleteQueries)
 {
   private readonly ILogger _logger = Log.ForContext("FilePath", FilePath)
                                         .ForContext("Operation", "Update");
 
-  public void RunUpdateQuery() {
-    var sheets = UpdateQueries.SelectMany(x => x.Sheets).Concat(Sheets).DistinctBy(x => x.Name).ToList();
-    sheets.Throw().IfEmpty();
+  public void Run() {
+    var sheets = Sheets.Concat(UpdateQueries.SelectMany(x => x.Sheets))
+                       .Concat(DeleteQueries.SelectMany(x => x.Sheets))
+                       .ToList();
+    sheets.Throw("Must provide sheets information")
+          .IfHasNullElements()
+          .IfNull(x => x)
+          .IfEmpty();
+    var distinctCount = sheets.DistinctBy(x => x.Name).Count();
+    var isMatch = distinctCount == sheets.Count;
+    sheets.Throw("Can not provide duplicated sheet names")
+          .IfFalse(isMatch)
+          .IfNull(x => x)
+          .IfEmpty();
+
     _logger.Information("Processing file");
     var excelPackage = new ExcelPackage(FilePath);
     var workbook = excelPackage.Workbook;
@@ -40,9 +53,21 @@ public class ExcelQueryFileUpdateManager(
 
       var updatedRowCount = 0;
       var updatedCellCount = 0;
+      var deletedRowCount = 0;
       var simpleData = new ExcelSimpleData(worksheet, headers);
       _logger.Verbose("Processing sheet rows {sheetName}", sheet.Name);
-      for (var r = sheet.StartRow; r < rowCount + 1; r++)
+      for (var r = sheet.StartRow; r < rowCount + 1; r++) {
+        var beforeDeletedCount = deletedRowCount;
+        foreach (var deleteQuery in DeleteQueries) {
+          var resultDeleteRow = DeleteRow(simpleData, r, deleteQuery);
+          var isDeleted = resultDeleteRow > 0;
+          if (!isDeleted) continue;
+          _logger.Verbose("Row deleted: {row} in {sheet}", r, FilePath);
+          deletedRowCount++;
+        }
+
+        var isDeletedRow = deletedRowCount > beforeDeletedCount;
+        if (isDeletedRow) continue;
         foreach (var updateQuery in UpdateQueries) {
           var resultUpdateRow = UpdateRow(simpleData, r, updateQuery);
           var isUpdated = resultUpdateRow > 0;
@@ -51,12 +76,14 @@ public class ExcelQueryFileUpdateManager(
           updatedRowCount++;
           updatedCellCount += resultUpdateRow;
         }
+      }
 
-      if (updatedRowCount <= 0) continue;
-      _logger.Information("Sheet {sheetName} UpdatedRows: {updatedRowCount} UpdatedCells: {updatedCellCount}",
+      if (updatedRowCount <= 0 && deletedRowCount <= 0) continue;
+      _logger.Information("Sheet {sheetName} UpdatedRows: {updatedRowCount} UpdatedCells: {updatedCellCount} DeletedRows: {deletedRowCount}",
                           sheet.Name,
                           updatedRowCount,
-                          updatedCellCount);
+                          updatedCellCount,
+                          deletedRowCount);
       updatedSheets++;
     }
 
@@ -92,6 +119,7 @@ public class ExcelQueryFileUpdateManager(
             if (isSameValue) {
               continue;
             }
+
             ExcelTools.UpdateCellValue(worksheet, row, header.Key + 1, newCellValue);
             updatedCells++;
           }
@@ -112,13 +140,41 @@ public class ExcelQueryFileUpdateManager(
             var newCellValue = ExcelTools.GetNewCellValue(cellValue, updateQuery.Value, updateQuery.UpdateOperator);
             var isSameValue = cellValue == newCellValue;
             if (isSameValue) {
-               continue;
+              continue;
             }
+
             ExcelTools.UpdateCellValue(worksheet, row, header.Key + 1, newCellValue);
             updatedCells++;
           }
         }
 
+        break;
+      }
+      default:
+        throw new ArgumentOutOfRangeException();
+    }
+
+    return updatedCells;
+  }
+
+  private int DeleteRow(ExcelSimpleData excelSimpleData, int row, DeleteQueryInformation deleteQueryInformation) {
+    var updatedCells = 0;
+    var worksheet = excelSimpleData.Worksheet;
+    switch (deleteQueryInformation.FilterMergeOperator) {
+      case MergeOperator.AND when deleteQueryInformation.Filters.Length == 0:
+        throw new InvalidOperationException("Filters must be provided when merge operator is AND");
+      case MergeOperator.AND: {
+        var allMatch = ExcelTools.IsAllMatched(excelSimpleData, row, deleteQueryInformation.Filters);
+        if (!allMatch) return 0;
+        worksheet.DeleteRow(row);
+        updatedCells += excelSimpleData.Headers.Count;
+        break;
+      }
+      case null or MergeOperator.OR: {
+        var anyMatch = ExcelTools.IsAnyMatched(excelSimpleData, row, deleteQueryInformation.Filters);
+        if (!anyMatch) return 0;
+        worksheet.DeleteRow(row);
+        updatedCells += excelSimpleData.Headers.Count;
         break;
       }
       default:

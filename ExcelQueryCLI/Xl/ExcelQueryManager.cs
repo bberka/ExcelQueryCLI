@@ -6,8 +6,10 @@ namespace ExcelQueryCLI.Xl;
 
 public static class ExcelQueryManager
 {
-  public static void RunUpdateQuery(ExcelQueryRootUpdate query,
-                                    byte parallelThreads = StaticSettings.DefaultParallelThreads) {
+  private static readonly ILogger _logger = Log.ForContext("Class", "ExcelQueryManager");
+
+  public static void RunQuery(ExcelQueryRoot query,
+                              byte parallelThreads = StaticSettings.DefaultParallelThreads) {
     Parallel.ForEach(ExcelTools.GetExcelFilesList(query.Source).Distinct(),
                      new ParallelOptions() {
                        MaxDegreeOfParallelism = parallelThreads
@@ -16,30 +18,11 @@ public static class ExcelQueryManager
                        try {
                          if (query.Backup) ExcelTools.BackupFile(file);
 
-                         var excelFileManager = new ExcelQueryFileUpdateManager(file, query.Sheets, query.Query);
-                         excelFileManager.RunUpdateQuery();
+                         var excelFileManager = new ExcelQueryFileManager(file, query.Sheets, query.QueryUpdate, query.QueryDelete);
+                         excelFileManager.Run();
                        }
                        catch (Exception ex) {
-                         Log.Error(ex, "RunUpdateQuery:Exception");
-                       }
-                     });
-  }
-
-  public static void RunDeleteQuery(ExcelQueryRootDelete query,
-                                    byte parallelThreads = StaticSettings.DefaultParallelThreads) {
-    Parallel.ForEach(ExcelTools.GetExcelFilesList(query.Source),
-                     new ParallelOptions() {
-                       MaxDegreeOfParallelism = parallelThreads
-                     },
-                     file => {
-                       try {
-                         if (query.Backup) ExcelTools.BackupFile(file);
-
-                         var excelFileManager = new ExcelQueryFileDeleteManager(file, query.Sheets, query.Query);
-                         excelFileManager.RunDeleteQuery();
-                       }
-                       catch (Exception ex) {
-                         Log.Error(ex, "RunDeleteQuery:Exception");
+                         _logger.Error(ex, "Exception while processing file {file}", file);
                        }
                      });
   }

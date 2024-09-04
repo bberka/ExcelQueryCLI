@@ -29,8 +29,7 @@ public sealed class ExcelQueryCoconaApp
     }
   }
 
-  [Command("update", Description = "Update rows in Excel file")]
-  public void Update(
+  public void Run(
     [Argument("query", Description = "Query file path (YAML, JSON, or XML)")]
     string filePath,
     [Option("log-level", ['l'], Description = "Log level (default: Information)")]
@@ -41,56 +40,17 @@ public sealed class ExcelQueryCoconaApp
     byte parallelThreads = StaticSettings.DefaultParallelThreads
   ) {
     init(logLevel, commercial, parallelThreads);
-    ExcelQueryRootUpdate q;
+    ExcelQueryRoot q;
     try {
       var fileType = ExcelTools.GetFileType(filePath);
-      q = ExcelQueryRootUpdate.ParseFile(filePath, fileType);
+      q = ExcelQueryRoot.ParseFile(filePath, fileType);
     }
     catch (Exception ex) {
-      Log.Error("Error parsing query file: {Message}", ex.Message);
+      Log.Error("Error in query file: {Message}", ex.Message);
       return;
     }
 
     Log.Information("Processing update query");
-    try {
-      ExcelQueryManager.RunUpdateQuery(q, parallelThreads);
-    }
-    catch (Exception ex) {
-      Log.Error("Error updating Excel file: {Message}", ex.Message);
-    }
-  }
-
-  [Command("delete", Description = "Delete rows in Excel file")]
-  public void Delete(
-    [Argument("query", Description = "Query file path (YAML, JSON, or XML)")]
-    string filePath,
-    [Option("log-level", ['l'], Description = "Log level")]
-    LogEventLevel logLevel = LogEventLevel.Information,
-    [Option("commercial", ['c'], Description = "Use commercial license")]
-    bool commercial = false,
-    [Option("parallel-threads", ['p'], Description = "Number of parallel threads")]
-    byte parallelThreads = StaticSettings.DefaultParallelThreads
-  ) {
-    init(logLevel, commercial, parallelThreads);
-
-
-    ExcelQueryRootDelete q;
-    try {
-      var fileType = ExcelTools.GetFileType(filePath);
-      q = ExcelQueryRootDelete.ParseFile(filePath, fileType);
-    }
-    catch (Exception ex) {
-      Log.Error("Error parsing query file: {Message}", ex.Message);
-      return;
-    }
-
-
-    Log.Information("Processing delete query");
-    try {
-      ExcelQueryManager.RunDeleteQuery(q, parallelThreads);
-    }
-    catch (Exception ex) {
-      Log.Error("Error deleting Excel file: {Message}", ex.Message);
-    }
+    ExcelQueryManager.RunQuery(q, parallelThreads);
   }
 }
