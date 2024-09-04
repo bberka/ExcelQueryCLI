@@ -20,15 +20,10 @@ public class ExcelQueryFileManager(
   public void Run() {
     var sheets = Sheets.Concat(UpdateQueries.SelectMany(x => x.Sheets))
                        .Concat(DeleteQueries.SelectMany(x => x.Sheets))
+                       .DistinctBy(x => x.Name)
                        .ToList();
     sheets.Throw("Must provide sheets information")
           .IfHasNullElements()
-          .IfNull(x => x)
-          .IfEmpty();
-    var distinctCount = sheets.DistinctBy(x => x.Name).Count();
-    var isMatch = distinctCount == sheets.Count;
-    sheets.Throw("Can not provide duplicated sheet names")
-          .IfFalse(isMatch)
           .IfNull(x => x)
           .IfEmpty();
 
@@ -42,6 +37,7 @@ public class ExcelQueryFileManager(
         _logger.Warning("Sheet {sheetName} not found ", sheet.Name);
         continue;
       }
+
 
       var rowCount = worksheet.Dimension.Rows;
       _logger.Information("Processing sheet {sheetName}", sheet.Name);
@@ -59,6 +55,8 @@ public class ExcelQueryFileManager(
       for (var r = sheet.StartRow; r < rowCount + 1; r++) {
         var beforeDeletedCount = deletedRowCount;
         foreach (var deleteQuery in DeleteQueries) {
+          var isUpdateSheet = deleteQuery.Sheets.Any(x => x.Name == sheet.Name);
+          if (!isUpdateSheet) continue;
           var resultDeleteRow = DeleteRow(simpleData, r, deleteQuery);
           var isDeleted = resultDeleteRow > 0;
           if (!isDeleted) continue;
@@ -69,6 +67,8 @@ public class ExcelQueryFileManager(
         var isDeletedRow = deletedRowCount > beforeDeletedCount;
         if (isDeletedRow) continue;
         foreach (var updateQuery in UpdateQueries) {
+          var isUpdateSheet = updateQuery.Sheets.Any(x => x.Name == sheet.Name);
+          if (!isUpdateSheet) continue;
           var resultUpdateRow = UpdateRow(simpleData, r, updateQuery);
           var isUpdated = resultUpdateRow > 0;
           if (!isUpdated) continue;
