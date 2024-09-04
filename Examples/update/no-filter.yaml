@@ -1,9 +1,0 @@
-﻿source:
-  - 'ExcelFile.xlsx'
-sheets:
-    - name: 'Employees Table'
-query:
-  - update:
-      - column: 'Salary'
-        compare: 'MULTIPLY'
-        value: '1.3'

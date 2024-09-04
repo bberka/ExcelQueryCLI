@@ -1,9 +1,0 @@
-<root>
-  <source>ExcelFile.xlsx</source>
-  <sheets name="Employees Table" header_row="1" start_row="2"/>
-  <query>
-    <filters column="NAME" compare="EQUALS">
-      <values>John</values>
-    </filters>
-  </query>
-</root>
