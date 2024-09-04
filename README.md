@@ -36,6 +36,7 @@ EPPlus is licensed under the GNU Library General Public License (LGPL) and is fr
 For commercial purposes, you need to purchase a license from the [EPPlus website](https://epplussoftware.com/).
 
 ## Supported Excel File Formats
+
 It will work on any Excel file that is supported by EPPlus library
 
 ## Supported Query File Formats
@@ -53,74 +54,79 @@ See more examples in the [examples](Examples) folder
 Check [class models](ExcelQueryCLI/Models) in project to have a better understanding of the query structure
 
 You must use "root" element in XML file
+
+### Query Rules
+- Do not pass duplicated source paths (Handled gracefully)
+- Do not pass duplicated sheet names in root scope (Handled gracefully)
+- Do not pass duplicated sheet names in query scope (Handled gracefully)
+- Do not pass duplicated column names in update scope (Throws error)
+- Do not pass duplicated column names in filter scope (Throws error)
+- Do pass either global sheet name or sheet name in every query scope (Throws error)
+- Do not pass values in filter scope for IS_NULL_OR_BLANK and IS_NOT_NULL_OR_BLANK operators (Throws error)
+- Do pass values separated by '-' in filter scope for BETWEEN and NOT_BETWEEN operators (Throws error)
+- Do pass 2 values separated by '|>|' in update scope for REPLACE operator (Throws error)
+- Do not pass empty string in value field for APPEND and PREPEND operators (Throws error)
+- You must provide multiple filters when using filter_merge (Throws error)
+- You can pass filter_merge when there is not multiple filters passed (Throws error)
+
 ### Update Query
 
 At least one update query must be provided for update operation
 
 Complex query with multiple filters
 
-```yaml
-source: # You can specify multiple files and directories
-  - 'ExcelFile.xlsx'
-  - 'ExcelFile2.xlsx'
-  - 'Folder\ExcelFiles'
-backup: true # Backup files before updating
-sheets:
-    - name: 'Employees Table' # Name of the sheet
-      header_row: '1' # Row number of the header
-      start_row: '2' # Row number of the first data row
-    - name: 'Salary Table'
-    - name: 'Address Table'
-query:
-  - update: # With single filter
-      - column: 'Fullname' # Column name to update
-        operator: 'APPEND' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
-        value: 'John Doe' # Value to use for update
-      - column: 'Phone' # Column name to update
-        operator: 'Replace' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
-        value: '555|>|222' # Value to use for update
-    filters: # Filters to apply
-      - column: 'NAME'
-        compare: 'EQUALS'
-        values:
-          - 'John'
-          - 'Mark'
-      - column: 'Salary'
-        compare: 'BETWEEN'
-        values:
-          - '1000-2000'
-  - update: # With multiple filters
-      column: 'Address' # Column name to update
-      operator: 'SET' # Operator to use SET, ADD, SUBTRACT, MULTIPLY, DIVIDE etc.
-      value: 'Turkey' # Value to use for update
-    filter_merge: 'AND' # Operator to use for multiple filters, it does not have any effect when there is only one filter
-    filters: # Filters to apply
-      - column: 'NAME' # Multiple filters can be applied
-        compare: 'EQUALS'
-        values:
-          - 'John' # Value to compare
-      - column: 'FULLNAME'
-        compare: 'EQUALS'
-        values:
-          - 'Mark'
-  - update: # you can use without filter
-      - column: 'Salary'
-        operator: 'MULTIPLY'
-        value: '1.3'
+```xml
+
+<root>
+  <source>ExcelFile.xlsx</source>
+  <source>ExcelFile2.xlsx</source>
+  <source>Folder\ExcelFiles</source>
+  <backup>true</backup>
+  <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <query>
+    <sheets name="Address Table"/>
+    <update column="Fullname" operator="APPEND" value="John Doe"/>
+    <update column="Department" operator="SET" value="HR"/>
+    <filters column="NAME" compare="EQUALS">
+      <values>John</values>
+      <values>Mark</values>
+    </filters>
+  </query>
+  <query>
+    <sheets name="Salary Table"/>
+    <update column="Address" operator="SET" value="Turkey"/>
+    <filter_merge>AND</filter_merge>
+    <filters column="NAME" compare="EQUALS">
+      <values>John</values>
+    </filters>
+    <filters column="FULLNAME" compare="EQUALS">
+      <values>Mark</values>
+    </filters>
+  </query>
+  <query>
+    <update column="Salary" operator="MULTIPLY" value="1.3"/>
+  </query>
+</root>
 ```
 
 Simple query without any filters
 
-```yaml
-source:
-  - 'ExcelFile.xlsx'
-sheets:
-    - name: 'Employees Table'
-query:
-  - update:
-      - column: 'Salary'
-        operator: 'MULTIPLY'
-        value: '1.3'
+```xml
+
+<root>
+  <source>ExcelFile.xlsx</source>
+  <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <query>
+    <update column="Fullname" operator="APPEND" value="John Doe"/>
+    <update column="Department" operator="SET" value="HR"/>
+  </query>
+  <query>
+    <update column="Address" operator="SET" value="Turkey"/>
+  </query>
+  <query>
+    <update column="Salary" operator="MULTIPLY" value="1.3"/>
+  </query>
+</root>
 ```
 
 ### Delete Query
@@ -129,37 +135,47 @@ At least one filter must be provided for delete operation
 
 Simple query
 
-```yaml
-source: # Source file or directory path
-  - 'ExcelFile.xlsx'
-sheets: # Sheet names to be processed
-    - name: 'Employees Table' # Sheet name
-query:
-  - filters: # Filter queries
-      - column: 'Department' # Column name to filter
-        operator: 'EQUALS' # Operator to use for filter
-        values: # Values to use for filter (always using OR operation for compare since otherwise does not make any sense)
-          - 'HR'
+```xml
+
+<root>
+  <source>ExcelFile.xlsx</source>
+  <source>ExcelFile2.xlsx</source>
+  <source>Folder\ExcelFiles</source>
+  <backup>true</backup>
+  <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <query>
+    <sheets name="Address Table"/>
+    <filters column="NAME" compare="EQUALS">
+      <values>John</values>
+      <values>Mark</values>
+    </filters>
+  </query>
+  <query>
+    <sheets name="Salary Table"/>
+    <filter_merge>AND</filter_merge>
+    <filters column="NAME" compare="EQUALS">
+      <values>John</values>
+    </filters>
+    <filters column="FULLNAME" compare="EQUALS">
+      <values>Mark</values>
+    </filters>
+  </query>
+</root>
 ```
 
 Simple query with multiple filters
 
-```yaml
-source: # Source file or directory path
-  - 'ExcelFile.xlsx'
-sheets: # Sheet names to be processed
-    - name: 'Employees Table' # Sheet name
-query:
-  filter_merge: 'AND' # Filter merge operator (AND, OR) only valid when multiple filters are used
-  filters: # Filter queries
-    - column: 'Department' # Column name to filter
-      operator: 'EQUALS' # Operator to use for filter
-      values: # Values to use for filter (always using OR operation for compare since otherwise does not make any sense)
-        - 'HR'
-    - column: 'Location'
-      operator: 'NOT_EQUALS'
-      values:
-        - 'Turkey'
+```xml
+
+<root>
+  <source>ExcelFile.xlsx</source>
+  <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <query>
+    <filters column="NAME" compare="EQUALS">
+      <values>John</values>
+    </filters>
+  </query>
+</root>
 ```
 
 ### Query Structure
@@ -217,9 +233,13 @@ Used in comparing values in the filter queries
 - `LESS_THAN_OR_EQUAL` : Less than or equal operator
     - Passed value must be a floating number
 - `CONTAINS` : Contains operator
+    - Passed value can not be empty string
 - `NOT_CONTAINS` : Not contains operator
+    - Passed value can not be empty string
 - `STARTS_WITH` : Starts with operator
+    - Passed value can not be empty string
 - `ENDS_WITH` : Ends with operator
+    - Passed value can not be empty string
 - `BETWEEN` : Between operator
     - You must provide 2 numbers in a single value field separated by a dash (-)
 - `NOT_BETWEEN` : Not between operator
@@ -251,25 +271,37 @@ Used in updating values in the update queries
         - First value is the value to be replaced
         - Second value is the value to replace with
 
+
+## Usage
+
+```bash
+Usage: ExcelQueryCLI [command] [query-file-path] [options]
+```
+
+```bash
+Commands:
+  update    Update rows in Excel file
+  delete    Delete rows in Excel file
+```
+
+```bash
+Options:
+  -l, --log-level <LogEventLevel>    Log level (Default: Information) (Allowed values: Verbose, Debug, Information, Warning, Error, Fatal)
+  -c, --commercial                   Use commercial license
+  -p, --parallel-threads <Byte>      Number of parallel threads (Default: 1)
+  -h, --help                         Show help message
+```
+
 ## Update Function
 
 Update rows in Excel file based on the parameters provided
 
 ```bash
-ExcelQueryCLI.exe update -q <query-file-path> -p <parallelism>
+ExcelQueryCLI.exe update <query-file-path> -p <parallelism> -l <log-level> -c <commercial>
 ```
-
-### Parameters
-
-- `-q` or `--query` _(required)_
-    - The file or directory path to the yaml query file
-- `-p` or `--parallelism`
-    - The number of parallel threads to use for processing. Default is 1
-
-### Example
-
+Example usage
 ```bash
-ExcelQueryCLI.exe update -q "update.yaml" -p 4
+ExcelQueryCLI.exe update "update.xml" -p 4 -l Debug -c true
 ```
 
 ## Delete Function
@@ -277,20 +309,12 @@ ExcelQueryCLI.exe update -q "update.yaml" -p 4
 Delete rows in Excel file based on the parameters provided
 
 ```bash
-ExcelQueryCLI.exe update -q <query-file-path> -p <parallelism>
+ExcelQueryCLI.exe delete -q <query-file-path> -p <parallelism> -l <log-level> -c <commercial>
 ```
-
-### Parameters
-
-- `-q` or `--query` _(required)_
-    - The file or directory path to the yaml query file
-- `-p` or `--parallelism`
-    - The number of parallel threads to use for processing. Default is 1
-
-### Example
+Example usage
 
 ```bash
-ExcelQueryCLI.exe delete -q "delete.yaml" -p 4
+ExcelQueryCLI.exe delete -q "delete.xml" -p 4 -l Debug -c true
 ```
 
 ## License
@@ -299,17 +323,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
+### v2.5
+
+- Added possibility to pass sheets path inside query element. This will be concatenated with the root sheet paths
+- Added option to set log level via '-l' or '--log-level' parameter
+- Added option to set commercial usage via '-c' or '--commercial' parameter
+- Query file no longer needs parameter name you can pass it as argument after 'delete' or 'update' command
+- Fixed an issue where duplicated source files can be passed when passing directories
+- Update cell function now checks if old value is same as new value before updating
+
 ### v2.4
+
 - Fixed an issue where JSON property name was not working correctly
 - Fixed an issue where XML parsing was not working correctly due to wrong attribute usage
 - Fixed an issue where query validation were not working for JSON and XML files
 - Added more indepth tests
 
 ### v2.3
+
 - Fixed XML dictionary serialization issue
 - Refactored sheets model which caused syntax model change
 
 ### v2.2
+
 - Fixed an issue where JSON and XML query files were not being read correctly
 
 ### v2.1
