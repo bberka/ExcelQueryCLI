@@ -50,7 +50,7 @@ public sealed class ExcelQueryCoconaApp
       return;
     }
 
-    Log.Information("Processing update query");
+    Log.Information("Processing query");
     ExcelQueryManager.RunQuery(q, parallelThreads);
   }
 }
