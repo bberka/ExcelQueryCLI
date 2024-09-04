@@ -14,8 +14,7 @@ public class ExcelQueryFileManager(
   UpdateQueryInformation[] UpdateQueries,
   DeleteQueryInformation[] DeleteQueries)
 {
-  private readonly ILogger _logger = Log.ForContext("FilePath", FilePath)
-                                        .ForContext("Operation", "Update");
+  private readonly ILogger _logger = Log.ForContext("FilePath", FilePath);
 
   public void Run() {
     var sheets = Sheets.Concat(UpdateQueries.SelectMany(x => x.Sheets))
@@ -32,9 +31,9 @@ public class ExcelQueryFileManager(
     var workbook = excelPackage.Workbook;
     var updatedSheets = 0;
     foreach (var sheet in sheets) {
-      var worksheet = workbook.Worksheets.FirstOrDefault(x => x.Name == sheet.Name);
+      var worksheet = workbook.Worksheets.FirstOrDefault(x => x.Name == sheet.Name || x.Name.Equals(sheet.Name, StringComparison.OrdinalIgnoreCase));
       if (worksheet is null) {
-        _logger.Warning("Sheet {sheetName} not found ", sheet.Name);
+        _logger.Debug("Sheet {sheetName} not found ", sheet.Name);
         continue;
       }
 
@@ -96,9 +95,9 @@ public class ExcelQueryFileManager(
     }
   }
 
-  private int UpdateRow(ExcelSimpleData excelSimpleData,
-                        int row,
-                        UpdateQueryInformation updateQueryInformation) {
+  private static int UpdateRow(ExcelSimpleData excelSimpleData,
+                               int row,
+                               UpdateQueryInformation updateQueryInformation) {
     var updatedCells = 0;
     var headers = excelSimpleData.Headers;
     var worksheet = excelSimpleData.Worksheet;
@@ -111,7 +110,7 @@ public class ExcelQueryFileManager(
         foreach (var header in headers) {
           var cellValue = worksheet.Cells[row, header.Key + 1]?.Value?.ToString();
           foreach (var updateQuery in updateQueryInformation.Update) {
-            var isUpdateCol = header.Value == updateQuery.Column;
+            var isUpdateCol = header.Value == updateQuery.Column || header.Value.Equals(updateQuery.Column, StringComparison.OrdinalIgnoreCase);
             if (!isUpdateCol) continue;
 
             var newCellValue = ExcelTools.GetNewCellValue(cellValue, updateQuery.Value, updateQuery.UpdateOperator);
@@ -132,7 +131,7 @@ public class ExcelQueryFileManager(
           var cellValue = worksheet.Cells[row, header.Key + 1]?.Value?.ToString();
 
           foreach (var updateQuery in updateQueryInformation.Update) {
-            var isUpdateCol = header.Value == updateQuery.Column;
+            var isUpdateCol = header.Value == updateQuery.Column || header.Value.Equals(updateQuery.Column, StringComparison.OrdinalIgnoreCase);
             if (!isUpdateCol) continue;
 
             var newCellValue = ExcelTools.GetNewCellValue(cellValue, updateQuery.Value, updateQuery.UpdateOperator);
@@ -153,7 +152,7 @@ public class ExcelQueryFileManager(
     return updatedCells;
   }
 
-  private int DeleteRow(ExcelSimpleData excelSimpleData, int row, DeleteQueryInformation deleteQueryInformation) {
+  private static int DeleteRow(ExcelSimpleData excelSimpleData, int row, DeleteQueryInformation deleteQueryInformation) {
     var updatedCells = 0;
     var worksheet = excelSimpleData.Worksheet;
     switch (deleteQueryInformation.FilterMergeOperator) {
@@ -162,20 +161,19 @@ public class ExcelQueryFileManager(
       case MergeOperator.AND: {
         var allMatch = ExcelTools.IsAllMatched(excelSimpleData, row, deleteQueryInformation.Filters);
         if (!allMatch) return 0;
-        worksheet.DeleteRow(row);
-        updatedCells += excelSimpleData.Headers.Count;
         break;
       }
       case null or MergeOperator.OR: {
         var anyMatch = ExcelTools.IsAnyMatched(excelSimpleData, row, deleteQueryInformation.Filters);
         if (!anyMatch) return 0;
-        worksheet.DeleteRow(row);
-        updatedCells += excelSimpleData.Headers.Count;
         break;
       }
       default:
         throw new ArgumentOutOfRangeException();
     }
+
+    worksheet.DeleteRow(row);
+    updatedCells += excelSimpleData.Headers.Count;
 
     return updatedCells;
   }
