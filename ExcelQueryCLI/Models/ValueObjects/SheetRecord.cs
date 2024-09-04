@@ -1,13 +1,12 @@
 ﻿using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Interfaces;
 using Newtonsoft.Json;
 using Throw;
 using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models.ValueObjects;
 
-public sealed record SheetRecord : IModel
+public sealed record SheetRecord
 {
   private string _name = null!;
   private int _startRow = StaticSettings.DefaultStartRowIndex;

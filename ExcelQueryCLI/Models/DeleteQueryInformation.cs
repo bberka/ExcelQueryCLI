@@ -1,5 +1,4 @@
 ﻿using System.Xml.Serialization;
-using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
@@ -8,7 +7,7 @@ using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models;
 
-public sealed class DeleteQueryInformation : IModel
+public sealed class DeleteQueryInformation
 {
   private SheetRecord[] _sheets = [];
   private FilterRecord[] _filters = [];
@@ -42,7 +41,7 @@ public sealed class DeleteQueryInformation : IModel
     }
   }
 
-  public void Validate() {
+  public void Validate(ValuesListDefinition[] valuesDefinitions) {
     if (FilterMergeOperator is null) {
       if (Filters.Length > 1) throw new ArgumentException("Filter merge operator must be provided when filters are provided.");
     }
@@ -61,7 +60,7 @@ public sealed class DeleteQueryInformation : IModel
 
 
     foreach (var filter in Filters)
-      filter.Validate();
+      filter.Validate(valuesDefinitions);
 
   
     foreach (var sheet in Sheets) {

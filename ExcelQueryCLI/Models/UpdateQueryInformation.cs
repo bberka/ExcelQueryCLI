@@ -1,5 +1,4 @@
 ﻿using System.Xml.Serialization;
-using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
@@ -8,7 +7,7 @@ using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models;
 
-public sealed record UpdateQueryInformation : IModel
+public sealed record UpdateQueryInformation
 {
   private UpdateQueryRecord[] _update = [];
   private SheetRecord[] _sheets = [];
@@ -52,13 +51,12 @@ public sealed record UpdateQueryInformation : IModel
     }
   }
 
-  public void Validate() {
+  public void Validate(ValuesListDefinition[] valuesDefinitions) {
     var isUpdateQueryColumnsUnique = Update.DistinctBy(x => x.Column).Count() == Update.Length;
     if (!isUpdateQueryColumnsUnique) throw new ArgumentException("Update query columns must be unique");
-
-    foreach (var filter in Filters)
-      filter.Validate();
-
+    foreach (var filter in Filters) {
+      filter.Validate(valuesDefinitions);
+    }
     foreach (var query in Update)
       query.Validate();
 

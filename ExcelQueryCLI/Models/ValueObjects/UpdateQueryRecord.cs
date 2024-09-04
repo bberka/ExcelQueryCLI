@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
 using Throw;
@@ -9,7 +8,7 @@ using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models.ValueObjects;
 
-public sealed class UpdateQueryRecord : IModel
+public sealed class UpdateQueryRecord
 {
   private string _column = string.Empty;
   private UpdateOperator _updateOperator;

@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
@@ -13,11 +12,13 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace ExcelQueryCLI.Models.Roots;
 
-public sealed class ExcelQueryRootDelete : IModel
+public sealed class ExcelQueryRootDelete
 {
   private SheetRecord[] _sheets = [];
   private string[] _source = [];
   private DeleteQueryInformation[] _query = [];
+  private ValuesListDefinition[] _valuesDefinitions = [];
+
 
   [YamlMember(Alias = "source")]
   [XmlElement("source")]
@@ -65,6 +66,18 @@ public sealed class ExcelQueryRootDelete : IModel
   public bool Backup { get; set; } = StaticSettings.DefaultBackup;
 
 
+  [YamlMember(Alias = "values_def")]
+  [XmlElement("values_def")]
+  [JsonProperty("values_def")]
+  public ValuesListDefinition[] ValuesDefinitions {
+    get => _valuesDefinitions;
+    set {
+      var isUniqueKeys = value?.DistinctBy(x => x.Key).Count() == value?.Length;
+      isUniqueKeys.Throw("Values definition keys must be unique").IfFalse();
+      _valuesDefinitions = value ?? [];
+      _valuesDefinitions.Throw("Values Definition must not have null elements").IfHasNullElements();
+    }
+  }
 
   public static ExcelQueryRootDelete ParseFile(string path, SupportedFileType fileType) {
     var text = File.ReadAllText(path);
@@ -117,7 +130,7 @@ public sealed class ExcelQueryRootDelete : IModel
   public void Validate() {
     foreach (var sheet in Sheets) sheet.Validate();
 
-    foreach (var q in Query) q.Validate();
+    foreach (var q in Query) q.Validate(ValuesDefinitions);
 
     if (Sheets.Length == 0) {
       foreach (var q in Query) {

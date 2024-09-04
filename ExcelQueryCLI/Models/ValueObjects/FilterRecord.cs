@@ -1,6 +1,5 @@
 ﻿using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
 using Throw;
@@ -8,11 +7,12 @@ using YamlDotNet.Serialization;
 
 namespace ExcelQueryCLI.Models.ValueObjects;
 
-public record FilterRecord : IModel
+public record FilterRecord
 {
   private string[] _values = [];
   private string _column = string.Empty;
   private CompareOperator _compareOperator;
+  private string[] _valuesDefinitionKey = [];
 
   [YamlMember(Alias = "column")]
   [XmlAttribute("column")]
@@ -50,7 +50,27 @@ public record FilterRecord : IModel
     }
   }
 
-  public void Validate() {
+  [YamlMember(Alias = "values_def_key")]
+  [XmlElement("values_def_key")]
+  [JsonProperty("values_def_key")]
+  public string[] ValuesDefinitionKeys {
+    get => _valuesDefinitionKey;
+    set {
+      _valuesDefinitionKey = value?.Select(x => x.Trim().Replace(" ",""))
+                                  .Where(x => !string.IsNullOrEmpty(x) && !string.IsNullOrWhiteSpace(x))
+                                  .Distinct()
+                                  .ToArray() ?? [];
+      _valuesDefinitionKey.Throw().IfHasNullElements();
+    }
+  }
+
+  public void Validate(ValuesListDefinition[] valuesDefinitions) {
+    foreach (var key in ValuesDefinitionKeys) {
+      var valuesDefinition = valuesDefinitions.FirstOrDefault(x => x.Key == key);
+      valuesDefinition.ThrowIfNull("Values definition key not found: " + key);
+      var concat = Values.Concat(valuesDefinition.Values).ToArray();
+      Values = concat;
+    }
     switch (CompareOperator) {
       case CompareOperator.EQUALS:
         Values.Throw().IfEmpty();

@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Xml.Serialization;
 using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Interfaces;
 using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
@@ -13,11 +12,12 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace ExcelQueryCLI.Models.Roots;
 
-public sealed record ExcelQueryRootUpdate : IModel
+public sealed record ExcelQueryRootUpdate
 {
   private string[] _source = [];
   private SheetRecord[] _sheets;
   private UpdateQueryInformation[] _query = [];
+  private ValuesListDefinition[] _valuesDefinitions = [];
 
   [YamlMember(Alias = "source")]
   [XmlElement("source")]
@@ -56,6 +56,19 @@ public sealed record ExcelQueryRootUpdate : IModel
     set {
       _query = value?.ToArray() ?? [];
       _query.Throw().IfEmpty().IfHasNullElements();
+    }
+  }
+
+  [YamlMember(Alias = "values_def")]
+  [XmlElement("values_def")]
+  [JsonProperty("values_def")]
+  public ValuesListDefinition[] ValuesDefinitions {
+    get => _valuesDefinitions;
+    set {
+      var isUniqueKeys = value?.DistinctBy(x => x.Key).Count() == value?.Length;
+      isUniqueKeys.Throw("Values definition keys must be unique").IfFalse();
+      _valuesDefinitions = value ?? [];
+      _valuesDefinitions.Throw("Values Definition must not have null elements").IfHasNullElements();
     }
   }
 
@@ -113,7 +126,8 @@ public sealed record ExcelQueryRootUpdate : IModel
   }
 
   public void Validate() {
-    foreach (var update in Query) update.Validate();
+    
+    foreach (var update in Query) update.Validate(ValuesDefinitions);
 
     foreach (var sheet in Sheets) sheet.Validate();
 
