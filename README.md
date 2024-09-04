@@ -4,9 +4,11 @@ ExcelQueryCLI is a command line tool that allows you to update Excel files using
 
 You create a query file that defines the operations you want to perform on your Excel files, such as filters.
 
-The tool reads the query file and applies the operations to the Excel files, updating the rows based on the filter conditions.
+The tool reads the query file and applies the operations to the Excel files, updating the rows based on the filter
+conditions.
 
-You can use this tool to automate repetitive tasks in Excel files, such as updating rows based on certain conditions or deleting rows that meet specific criteria.
+You can use this tool to automate repetitive tasks in Excel files, such as updating rows based on certain conditions or
+deleting rows that meet specific criteria.
 
 ## You can use ExcelQueryCLI to:
 
@@ -55,8 +57,6 @@ It will work on any Excel file that is supported by EPPlus library
 
 CLI tool uses YAML, XML, JSON files for querying. The YAML, XML, JSON file should contain the following structure
 
-See more examples in the [examples](Examples) folder
-
 Check [class models](ExcelQueryCLI/Models) in project to have a better understanding of the query structure
 
 You must use "root" element in XML file
@@ -64,29 +64,33 @@ You must use "root" element in XML file
 ### Query Rules
 
 #### Handled Gracefully
+
 - Do not pass duplicated source paths (Handled gracefully)
-- Do not pass duplicated sheet names in root scope (Handled gracefully)
-- Do not pass duplicated sheet names in query scope (Handled gracefully)
 - When using values_def_key the key must not contain any spaces (Handled gracefully)
 - All column names is trimmed before usage
 
 #### Throws Error
-- Do not pass duplicated column names in update scope 
-- Do not pass duplicated column names in filter scope 
-- Do pass either global sheet name or sheet name in every query scope 
-- Do not pass values in filter scope for IS_NULL_OR_BLANK and IS_NOT_NULL_OR_BLANK operators 
-- Do pass values separated by '-' in filter scope for BETWEEN and NOT_BETWEEN operators 
-- Do pass 2 values separated by '|>|' in update scope for REPLACE operator 
-- Do not pass empty string in value field for APPEND and PREPEND operators 
-- You must provide multiple filters when using filter_merge 
-- You can pass filter_merge when there is not multiple filters passed 
+
+- Do not pass duplicated column names in update scope
+- Do not pass duplicated column names in filter scope
+- Do pass either global sheet name or sheet name in every query scope
+- Do not pass values in filter scope for IS_NULL_OR_BLANK and IS_NOT_NULL_OR_BLANK operators
+- Do pass values separated by '-' in filter scope for BETWEEN and NOT_BETWEEN operators
+- Do pass 2 values separated by '|>|' in update scope for REPLACE operator
+- Do not pass empty string in value field for APPEND and PREPEND operators
+- You must provide multiple filters when using filter_merge
+- You can pass filter_merge when there is not multiple filters passed
+- Do not pass duplicated sheet names in root scope
+- Do not pass duplicated sheet names in query scope
+
+### Example Queries
+
+At least one update or delete query must be provided
+
+Delete query check always applied before update query check. This means if a row is matched a delete query filter it will not check for update query filters.
 
 
-### Update Query
-
-At least one update query must be provided for update operation
-
-Complex query
+#### Complex query
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
@@ -101,15 +105,15 @@ Complex query
     <values>Mark</values>
     <values>Justin</values>
   </values_def>
-  <query>
+  <query_update>
     <sheets name="Address Table"/>
     <update column="Fullname" operator="APPEND" value="John Doe"/>
     <update column="Department" operator="SET" value="HR"/>
     <filters column="NAME" compare="EQUALS">
       <values_def_key>NAMES</values_def_key>
     </filters>
-  </query>
-  <query>
+  </query_update>
+  <query_update>
     <sheets name="Salary Table"/>
     <update column="Address" operator="SET" value="Turkey"/>
     <filter_merge>AND</filter_merge>
@@ -121,78 +125,35 @@ Complex query
       <values>Ella</values>
       <values>Lawrance</values>
     </filters>
-  </query>
-  <query>
+  </query_update>
+  <query_update>
     <update column="Salary" operator="MULTIPLY" value="1.3"/>
-  </query>
-</root>
-```
-
-Simple query
-
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<root>
-  <source>ExcelFile.xlsx</source>
-  <sheets name="Employees Table" header_row="1" start_row="2"/>
-  <query>
-    <update column="Fullname" operator="APPEND" value="John Doe"/>
-    <update column="Department" operator="SET" value="HR"/>
-  </query>
-</root>
-```
-
-### Delete Query
-
-At least one filter must be provided for delete operation
-
-Complex query
-
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<root>
-  <source>ExcelFile.xlsx</source>
-  <source>ExcelFile2.xlsx</source>
-  <source>Folder\ExcelFiles</source>
-  <backup>true</backup>
-  <sheets name="Employees Table" header_row="1" start_row="2"/>
-  <values_def key="NAMES">
-    <values>John</values>
-    <values>Mark</values>
-    <values>Justin</values>
-  </values_def>
-  <query>
+  </query_update>
+  <query_delete>
     <sheets name="Address Table"/>
-    <filters column="NAME" compare="EQUALS">
+    <filters column="CONNECTED_TO" compare="EQUALS">
       <values_def_key>NAMES</values_def_key>
     </filters>
-  </query>
-  <query>
-    <sheets name="Salary Table"/>
-    <filter_merge>AND</filter_merge>
-    <filters column="NAME" compare="EQUALS">
-      <values_def_key>NAMES</values_def_key>
-      <values>Ella</values>
-    </filters>
-    <filters column="FULLNAME" compare="EQUALS">
-      <values>Mark</values>
-    </filters>
-  </query>
-</root>
-```
-
-Simple query
-
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<root>
-  <source>ExcelFile.xlsx</source>
-  <sheets name="Employees Table" header_row="1" start_row="2"/>
-  <query>
+  </query_delete>
+  <query_delete>
     <filters column="NAME" compare="EQUALS">
       <values>John</values>
     </filters>
-  </query>
+  </query_delete>
+</root>
+```
+
+#### Simple query
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<root>
+  <source>ExcelFile.xlsx</source>
+  <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <query_update>
+    <update column="Fullname" operator="APPEND" value="John Doe"/>
+    <update column="Department" operator="SET" value="HR"/>
+  </query_update>
 </root>
 ```
 
@@ -204,7 +165,8 @@ This section specifies the Excel files or directories you want to process.
 
 You can provide multiple file paths or even directories containing Excel files.
 
-When passing directories it will process all Excel files in the directory. If duplicate files are passed it will be handled gracefully.
+When passing directories it will process all Excel files in the directory. If duplicate files are passed it will be
+handled gracefully.
 
 #### `backup` : Backup files before updating
 
@@ -233,6 +195,7 @@ Here you can define reusable values to be used in query filters.
 Define it like this in root:
 
 ```xml
+
 <values_def key="my_custom_key">
   <values>45</values>
   <values>346</values>
@@ -243,6 +206,7 @@ Define it like this in root:
 Then you can use it in your query like this:
 
 ```xml
+
 <filters column="ID" compare="EQUALS">
   <values_def_key>HR_IDS</values_def_key>
   <values_def_key>DEV_IDS</values_def_key>
@@ -255,7 +219,7 @@ Then you can use it in your query like this:
 - Key name should not contain any spaces or special characters
 - You can use multiple definition keys in a single filter query which will concatenate the values
 
-#### `query` : Query items
+#### `query_update` : Update queries
 
 This is the core of your configuration, outlining the filtering and update operations you want to perform.
 
@@ -273,6 +237,23 @@ Each query item consists of:
         - `compare`: The comparison operator (e.g., EQUALS, CONTAINS).
         - `values`: A list of values to compare against.
         - `values_def_key`: A key to reference the values defined in the `values_def` section.
+- `sheets` (optional): Specifies the sheet to update rows in.
+
+#### `query_delete` : Delete queries
+
+This is the core of your configuration, outlining the filtering and delete operations you want to perform.
+
+Each query item consists of:
+
+- `filter_merge` (optional): Specifies how multiple filters should be combined (AND or OR). Only valid when multiple
+  filters are used.
+- `filters` (optional): Specifies the conditions to filter rows before applying the delete.
+    - Each filter includes:
+        - `column`: The column to filter on.
+        - `compare`: The comparison operator (e.g., EQUALS, CONTAINS).
+        - `values`: A list of values to compare against.
+        - `values_def_key`: A key to reference the values defined in the `values_def` section.
+- `sheets` (optional): Specifies the sheet to delete rows from.
 
 ### Compare Operators
 
@@ -330,13 +311,7 @@ Used in updating values in the update queries
 ## Usage
 
 ```bash
-Usage: ExcelQueryCLI [command] [query-file-path] [options]
-```
-
-```bash
-Commands:
-  update    Update rows in Excel file
-  delete    Delete rows in Excel file
+Usage: ExcelQueryCLI [query-file-path] [options]
 ```
 
 ```bash
@@ -345,34 +320,6 @@ Options:
   -c, --commercial                   Use commercial license
   -p, --parallel-threads <Byte>      Number of parallel threads (Default: 1)
   -h, --help                         Show help message
-```
-
-## Update Function
-
-Update rows in Excel file based on the parameters provided
-
-```bash
-ExcelQueryCLI.exe update <query-file-path> -p <parallelism> -l <log-level> -c <commercial>
-```
-
-Example usage
-
-```bash
-ExcelQueryCLI.exe update "update.xml" -p 4 -l Debug -c true
-```
-
-## Delete Function
-
-Delete rows in Excel file based on the parameters provided
-
-```bash
-ExcelQueryCLI.exe delete -q <query-file-path> -p <parallelism> -l <log-level> -c <commercial>
-```
-
-Example usage
-
-```bash
-ExcelQueryCLI.exe delete -q "delete.xml" -p 4 -l Debug -c true
 ```
 
 ## License
@@ -393,6 +340,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Update cell function now checks if old value is same as new value before updating resulting in correct update count
 - Added support for defining and reusing values in query files (values_def element)
 - Added 'Throw' library for better error handling
+- Improved exception messages
+- Added possibility to run delete and update in single script. Removed update and delete argument instead it is passed inside query file. Which means it is possible to update and
+  delete some rows in single script.
+
 ### v2.4
 
 - Fixed an issue where JSON property name was not working correctly
