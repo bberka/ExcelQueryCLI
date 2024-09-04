@@ -68,6 +68,8 @@ You must use "root" element in XML file
 - Do not pass duplicated source paths (Handled gracefully)
 - When using values_def_key the key must not contain any spaces (Handled gracefully)
 - All column names is trimmed before usage
+- Do not pass duplicated sheet names in root scope
+- Do not pass duplicated sheet names in query scope
 
 #### Throws Error
 
@@ -80,8 +82,6 @@ You must use "root" element in XML file
 - Do not pass empty string in value field for APPEND and PREPEND operators
 - You must provide multiple filters when using filter_merge
 - You can pass filter_merge when there is not multiple filters passed
-- Do not pass duplicated sheet names in root scope
-- Do not pass duplicated sheet names in query scope
 
 ### Example Queries
 
