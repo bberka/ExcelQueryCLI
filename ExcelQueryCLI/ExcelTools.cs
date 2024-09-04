@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Data;
-using ExcelQueryCLI.Models;
+using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using OfficeOpenXml;
 using Serilog;
@@ -15,11 +15,6 @@ internal static class ExcelTools
   }
 
   internal static bool CheckIfMatch(string? checkCellValue, string matchValue, CompareOperator @operator) {
-    Log.Verbose("CheckFilter::Cell Value: {cellFilterValue}, Match Value: {matchFilterValue}, Operator: {Operator}",
-                checkCellValue,
-                matchValue,
-                @operator);
-
     if (checkCellValue is null) return false;
 
     switch (@operator) {
@@ -205,7 +200,10 @@ internal static class ExcelTools
     worksheet.Cells[row, column].Value = newValue;
   }
 
-  public static bool IsAllMatched(ExcelSimpleData excelSimpleData, int row, FilterQuery[] filters) {
+  public static bool IsAllMatched(ExcelSimpleData excelSimpleData, int row, FilterRecord[] filters) {
+    if (filters.Length == 0) {
+       throw new ArgumentException("Filters must be provided when merge operator is AND");
+    }
     foreach (var filter in filters)
     foreach (var header in excelSimpleData.Headers) {
       var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString();
@@ -218,8 +216,8 @@ internal static class ExcelTools
     return true;
   }
 
-  public static bool IsAnyMatched(ExcelSimpleData excelSimpleData, int row, FilterQuery[]? filters) {
-    if (filters is null) return true;
+  public static bool IsAnyMatched(ExcelSimpleData excelSimpleData, int row, FilterRecord[] filters) {
+    if (filters.Length == 0) return true;
 
     foreach (var filter in filters)
     foreach (var header in excelSimpleData.Headers) {
