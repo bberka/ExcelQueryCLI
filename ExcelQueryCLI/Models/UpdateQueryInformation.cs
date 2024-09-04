@@ -54,15 +54,11 @@ public sealed record UpdateQueryInformation
   public void Validate(ValuesListDefinition[] valuesDefinitions) {
     var isUpdateQueryColumnsUnique = Update.DistinctBy(x => x.Column).Count() == Update.Length;
     if (!isUpdateQueryColumnsUnique) throw new ArgumentException("Update query columns must be unique");
-    foreach (var filter in Filters) {
-      filter.Validate(valuesDefinitions);
-    }
+    foreach (var filter in Filters) filter.Validate(valuesDefinitions);
     foreach (var query in Update)
       query.Validate();
 
-    foreach (var sheet in Sheets) {
-      sheet.Validate();
-    }
+    foreach (var sheet in Sheets) sheet.Validate();
     var isMultipleFilter = Filters.Length > 1;
     if (isMultipleFilter) {
       var isFilterMergeOperatorProvided = FilterMergeOperator is not null;

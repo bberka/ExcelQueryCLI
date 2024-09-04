@@ -42,16 +42,16 @@ public sealed class DeleteQueryInformation
   }
 
   public void Validate(ValuesListDefinition[] valuesDefinitions) {
-    if (FilterMergeOperator is null) {
-      if (Filters.Length > 1) throw new ArgumentException("Filter merge operator must be provided when filters are provided.");
-    }
-    
+    if (FilterMergeOperator is null)
+      if (Filters.Length > 1)
+        throw new ArgumentException("Filter merge operator must be provided when filters are provided.");
+
     var isMultipleFilter = Filters.Length > 1;
     if (isMultipleFilter) {
       var isFilterMergeOperatorProvided = FilterMergeOperator is not null;
       if (!isFilterMergeOperatorProvided) throw new ArgumentException("Filter merge operator must be provided when filters are provided.");
     }
-    
+
     if (FilterMergeOperator == MergeOperator.AND) {
       //column names must be unique
       var uniqueColumns = Filters.Select(x => x.Column).Distinct().Count();
@@ -62,9 +62,7 @@ public sealed class DeleteQueryInformation
     foreach (var filter in Filters)
       filter.Validate(valuesDefinitions);
 
-  
-    foreach (var sheet in Sheets) {
-      sheet.Validate();
-    }
+
+    foreach (var sheet in Sheets) sheet.Validate();
   }
 }

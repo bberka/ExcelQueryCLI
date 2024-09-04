@@ -4,5 +4,5 @@ public enum SupportedFileType
 {
   YAML,
   JSON,
-  XML,
+  XML
 }

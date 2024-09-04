@@ -1,5 +1,5 @@
 ﻿using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Models.Roots;
+using ExcelQueryCLI.Models;
 using Serilog;
 
 namespace ExcelQueryCLI.Xl;

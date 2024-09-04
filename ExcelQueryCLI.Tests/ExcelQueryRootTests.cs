@@ -1,4 +1,4 @@
-﻿using ExcelQueryCLI.Models.Roots;
+﻿using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Static;
 
 namespace ExcelQueryCLI.Tests;
@@ -373,8 +373,8 @@ public sealed class ExcelQueryRootTests
     Assert.DoesNotThrow(() => { _ = ExcelQueryRoot.ParseXmlText(text); });
     Assert.Pass();
   }
-  
-  
+
+
   [Test]
   public void TestExcelQueryParseSimpleXMLText_Valid5() {
     const string text = """

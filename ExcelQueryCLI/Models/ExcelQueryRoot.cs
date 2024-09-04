@@ -10,7 +10,7 @@ using Throw;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace ExcelQueryCLI.Models.Roots;
+namespace ExcelQueryCLI.Models;
 
 public sealed record ExcelQueryRoot
 {
@@ -120,7 +120,7 @@ public sealed record ExcelQueryRoot
 
   public static ExcelQueryRoot ParseJsonText(string text) {
     var q = JsonConvert.DeserializeObject<ExcelQueryRoot>(text,
-                                                          settings: new JsonSerializerSettings() {
+                                                          new JsonSerializerSettings() {
                                                             Culture = CultureInfo.InvariantCulture,
                                                             Converters = { new Newtonsoft.Json.Converters.StringEnumConverter() }
                                                           }) ?? throw new ArgumentException("Invalid JSON");
@@ -146,13 +146,9 @@ public sealed record ExcelQueryRoot
     foreach (var r in QueryDelete) r.Validate(ValuesDefinitions);
     foreach (var s in Sheets) s.Validate();
     if (Sheets.Length == 0) {
-      foreach (var q in QueryUpdate) {
-        q.Throw("Sheet must be provided").IfEmpty(x => x.Sheets);
-      }
+      foreach (var q in QueryUpdate) q.Throw("Sheet must be provided").IfEmpty(x => x.Sheets);
 
-      foreach (var q in QueryDelete) {
-        q.Throw("Sheet must be provided").IfEmpty(x => x.Sheets);
-      }
+      foreach (var q in QueryDelete) q.Throw("Sheet must be provided").IfEmpty(x => x.Sheets);
     }
   }
 }

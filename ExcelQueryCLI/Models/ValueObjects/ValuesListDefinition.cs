@@ -16,7 +16,7 @@ public sealed class ValuesListDefinition
   public string Key {
     get => _key;
     set {
-      _key = value.Trim().Replace(" ","");
+      _key = value.Trim().Replace(" ", "");
       _key.Throw("Key must be provided").IfNullOrEmpty(x => x).IfNullOrWhiteSpace(x => x);
     }
   }
@@ -34,5 +34,4 @@ public sealed class ValuesListDefinition
       _values.Throw("Values must be provided").IfNull(x => x).IfEmpty().IfHasNullElements();
     }
   }
-
 }

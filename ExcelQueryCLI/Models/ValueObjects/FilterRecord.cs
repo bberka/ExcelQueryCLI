@@ -56,7 +56,7 @@ public record FilterRecord
   public string[] ValuesDefinitionKeys {
     get => _valuesDefinitionKey;
     set {
-      _valuesDefinitionKey = value?.Select(x => x.Trim().Replace(" ",""))
+      _valuesDefinitionKey = value?.Select(x => x.Trim().Replace(" ", ""))
                                   .Where(x => !string.IsNullOrEmpty(x) && !string.IsNullOrWhiteSpace(x))
                                   .Distinct()
                                   .ToArray() ?? [];
@@ -71,6 +71,7 @@ public record FilterRecord
       var concat = Values.Concat(valuesDefinition.Values).ToArray();
       Values = concat;
     }
+
     switch (CompareOperator) {
       case CompareOperator.EQUALS:
         Values.Throw("Values must be provided for EQUALS operator").IfEmpty();

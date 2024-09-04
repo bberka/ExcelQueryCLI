@@ -116,9 +116,7 @@ public class ExcelQueryFileManager(
 
             var newCellValue = ExcelTools.GetNewCellValue(cellValue, updateQuery.Value, updateQuery.UpdateOperator);
             var isSameValue = cellValue == newCellValue;
-            if (isSameValue) {
-              continue;
-            }
+            if (isSameValue) continue;
 
             ExcelTools.UpdateCellValue(worksheet, row, header.Key + 1, newCellValue);
             updatedCells++;
@@ -139,9 +137,7 @@ public class ExcelQueryFileManager(
 
             var newCellValue = ExcelTools.GetNewCellValue(cellValue, updateQuery.Value, updateQuery.UpdateOperator);
             var isSameValue = cellValue == newCellValue;
-            if (isSameValue) {
-              continue;
-            }
+            if (isSameValue) continue;
 
             ExcelTools.UpdateCellValue(worksheet, row, header.Key + 1, newCellValue);
             updatedCells++;

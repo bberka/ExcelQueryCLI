@@ -1,6 +1,6 @@
 ﻿using Cocona;
 using ExcelQueryCLI.Common;
-using ExcelQueryCLI.Models.Roots;
+using ExcelQueryCLI.Models;
 using ExcelQueryCLI.Xl;
 using OfficeOpenXml;
 using Serilog;

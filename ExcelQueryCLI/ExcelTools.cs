@@ -49,9 +49,7 @@ internal static class ExcelTools
         return checkCellValue.EndsWith(matchValue);
       case CompareOperator.BETWEEN:
         var values = matchValue.Split(StaticSettings.DefaultNumberStringSplitCharacter);
-        if (values.Length != 2) {
-          return false;
-        }
+        if (values.Length != 2) return false;
 
         return double.TryParse(checkCellValue, CultureInfo.InvariantCulture, out var cellValue5) &&
                double.TryParse(values[0], CultureInfo.InvariantCulture, out var matchValue5) &&
@@ -60,9 +58,7 @@ internal static class ExcelTools
                cellValue5 <= matchValue6;
       case CompareOperator.NOT_BETWEEN:
         var values2 = matchValue.Split(StaticSettings.DefaultNumberStringSplitCharacter);
-        if (values2.Length != 2) {
-          return false;
-        }
+        if (values2.Length != 2) return false;
 
         return double.TryParse(checkCellValue, CultureInfo.InvariantCulture, out var cellValue6) &&
                double.TryParse(values2[0], CultureInfo.InvariantCulture, out var matchValue7) &&
@@ -149,13 +145,9 @@ internal static class ExcelTools
         return setValue + cellValue;
       case UpdateOperator.REPLACE:
         //split the setValue into two parts, the first part is the old value and the second part is the new value
-        if (cellValue is null) {
-          return cellValue;
-        }
+        if (cellValue is null) return cellValue;
 
-        if (setValue is null) {
-          return cellValue;
-        }
+        if (setValue is null) return cellValue;
 
         var values = setValue?.Split(StaticSettings.DefaultReplaceSplitString);
         if (values?.Length != 2) return cellValue;
@@ -201,9 +193,7 @@ internal static class ExcelTools
   }
 
   public static bool IsAllMatched(ExcelSimpleData excelSimpleData, int row, FilterRecord[] filters) {
-    if (filters.Length == 0) {
-       throw new ArgumentException("Filters must be provided when merge operator is AND");
-    }
+    if (filters.Length == 0) throw new ArgumentException("Filters must be provided when merge operator is AND");
     foreach (var filter in filters)
     foreach (var header in excelSimpleData.Headers) {
       var headerValue = excelSimpleData.Worksheet.Cells[row, header.Key + 1]?.Value?.ToString();
@@ -241,17 +231,11 @@ internal static class ExcelTools
   }
 
   public static SupportedFileType GetFileType(string file) {
-    if (file.EndsWith("xml")) {
-      return SupportedFileType.XML;
-    }
+    if (file.EndsWith("xml")) return SupportedFileType.XML;
 
-    if (file.EndsWith("json")) {
-      return SupportedFileType.JSON;
-    }
+    if (file.EndsWith("json")) return SupportedFileType.JSON;
 
-    if (file.EndsWith("yaml")) {
-      return SupportedFileType.YAML;
-    }
+    if (file.EndsWith("yaml")) return SupportedFileType.YAML;
 
     throw new Exception("Unsupported file type: " + file);
   }

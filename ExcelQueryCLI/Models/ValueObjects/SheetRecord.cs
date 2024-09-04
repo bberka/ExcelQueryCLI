@@ -47,7 +47,5 @@ public sealed record SheetRecord
                     : value;
   }
 
-  public void Validate() {
-
-  }
+  public void Validate() { }
 }
