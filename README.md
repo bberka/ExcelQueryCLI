@@ -1,6 +1,12 @@
 ﻿# ExcelQueryCLI
 
-ExcelQueryCLI is a command line tool that allows you to update Excel files using yaml querying.
+ExcelQueryCLI is a command line tool that allows you to update Excel files using XML, JSON, YAML querying.
+
+You create a query file that defines the operations you want to perform on your Excel files, such as filters.
+
+The tool reads the query file and applies the operations to the Excel files, updating the rows based on the filter conditions.
+
+You can use this tool to automate repetitive tasks in Excel files, such as updating rows based on certain conditions or deleting rows that meet specific criteria.
 
 ## You can use ExcelQueryCLI to:
 
@@ -25,7 +31,7 @@ Win 64 version is for Windows 64 bit OS and it is a bundled exe file
 
 This app still in early development and may contain bugs. Please use it with caution.
 
-Syntax for querying might change with future updates
+Breaking changes could be introduced in pre-release.
 
 ## Disclaimer
 
@@ -56,40 +62,51 @@ Check [class models](ExcelQueryCLI/Models) in project to have a better understan
 You must use "root" element in XML file
 
 ### Query Rules
+
+#### Handled Gracefully
 - Do not pass duplicated source paths (Handled gracefully)
 - Do not pass duplicated sheet names in root scope (Handled gracefully)
 - Do not pass duplicated sheet names in query scope (Handled gracefully)
-- Do not pass duplicated column names in update scope (Throws error)
-- Do not pass duplicated column names in filter scope (Throws error)
-- Do pass either global sheet name or sheet name in every query scope (Throws error)
-- Do not pass values in filter scope for IS_NULL_OR_BLANK and IS_NOT_NULL_OR_BLANK operators (Throws error)
-- Do pass values separated by '-' in filter scope for BETWEEN and NOT_BETWEEN operators (Throws error)
-- Do pass 2 values separated by '|>|' in update scope for REPLACE operator (Throws error)
-- Do not pass empty string in value field for APPEND and PREPEND operators (Throws error)
-- You must provide multiple filters when using filter_merge (Throws error)
-- You can pass filter_merge when there is not multiple filters passed (Throws error)
+- When using values_def_key the key must not contain any spaces (Handled gracefully)
+- All column names is trimmed before usage
+
+#### Throws Error
+- Do not pass duplicated column names in update scope 
+- Do not pass duplicated column names in filter scope 
+- Do pass either global sheet name or sheet name in every query scope 
+- Do not pass values in filter scope for IS_NULL_OR_BLANK and IS_NOT_NULL_OR_BLANK operators 
+- Do pass values separated by '-' in filter scope for BETWEEN and NOT_BETWEEN operators 
+- Do pass 2 values separated by '|>|' in update scope for REPLACE operator 
+- Do not pass empty string in value field for APPEND and PREPEND operators 
+- You must provide multiple filters when using filter_merge 
+- You can pass filter_merge when there is not multiple filters passed 
+
 
 ### Update Query
 
 At least one update query must be provided for update operation
 
-Complex query with multiple filters
+Complex query
 
 ```xml
-
+<?xml version="1.0" encoding="utf-8" ?>
 <root>
   <source>ExcelFile.xlsx</source>
   <source>ExcelFile2.xlsx</source>
   <source>Folder\ExcelFiles</source>
   <backup>true</backup>
   <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <values_def key="NAMES">
+    <values>John</values>
+    <values>Mark</values>
+    <values>Justin</values>
+  </values_def>
   <query>
     <sheets name="Address Table"/>
     <update column="Fullname" operator="APPEND" value="John Doe"/>
     <update column="Department" operator="SET" value="HR"/>
     <filters column="NAME" compare="EQUALS">
-      <values>John</values>
-      <values>Mark</values>
+      <values_def_key>NAMES</values_def_key>
     </filters>
   </query>
   <query>
@@ -97,10 +114,12 @@ Complex query with multiple filters
     <update column="Address" operator="SET" value="Turkey"/>
     <filter_merge>AND</filter_merge>
     <filters column="NAME" compare="EQUALS">
-      <values>John</values>
+      <values_def_key>NAMES</values_def_key>
     </filters>
     <filters column="FULLNAME" compare="EQUALS">
-      <values>Mark</values>
+      <values_def_key>NAMES</values_def_key>
+      <values>Ella</values>
+      <values>Lawrance</values>
     </filters>
   </query>
   <query>
@@ -109,22 +128,16 @@ Complex query with multiple filters
 </root>
 ```
 
-Simple query without any filters
+Simple query
 
 ```xml
-
+<?xml version="1.0" encoding="utf-8" ?>
 <root>
   <source>ExcelFile.xlsx</source>
   <sheets name="Employees Table" header_row="1" start_row="2"/>
   <query>
     <update column="Fullname" operator="APPEND" value="John Doe"/>
     <update column="Department" operator="SET" value="HR"/>
-  </query>
-  <query>
-    <update column="Address" operator="SET" value="Turkey"/>
-  </query>
-  <query>
-    <update column="Salary" operator="MULTIPLY" value="1.3"/>
   </query>
 </root>
 ```
@@ -133,28 +146,33 @@ Simple query without any filters
 
 At least one filter must be provided for delete operation
 
-Simple query
+Complex query
 
 ```xml
-
+<?xml version="1.0" encoding="utf-8" ?>
 <root>
   <source>ExcelFile.xlsx</source>
   <source>ExcelFile2.xlsx</source>
   <source>Folder\ExcelFiles</source>
   <backup>true</backup>
   <sheets name="Employees Table" header_row="1" start_row="2"/>
+  <values_def key="NAMES">
+    <values>John</values>
+    <values>Mark</values>
+    <values>Justin</values>
+  </values_def>
   <query>
     <sheets name="Address Table"/>
     <filters column="NAME" compare="EQUALS">
-      <values>John</values>
-      <values>Mark</values>
+      <values_def_key>NAMES</values_def_key>
     </filters>
   </query>
   <query>
     <sheets name="Salary Table"/>
     <filter_merge>AND</filter_merge>
     <filters column="NAME" compare="EQUALS">
-      <values>John</values>
+      <values_def_key>NAMES</values_def_key>
+      <values>Ella</values>
     </filters>
     <filters column="FULLNAME" compare="EQUALS">
       <values>Mark</values>
@@ -163,10 +181,10 @@ Simple query
 </root>
 ```
 
-Simple query with multiple filters
+Simple query
 
 ```xml
-
+<?xml version="1.0" encoding="utf-8" ?>
 <root>
   <source>ExcelFile.xlsx</source>
   <sheets name="Employees Table" header_row="1" start_row="2"/>
@@ -183,12 +201,18 @@ Simple query with multiple filters
 #### `source` : Source file or directory path
 
 This section specifies the Excel files or directories you want to process.
+
 You can provide multiple file paths or even directories containing Excel files.
+
+When passing directories it will process all Excel files in the directory. If duplicate files are passed it will be handled gracefully.
 
 #### `backup` : Backup files before updating
 
 Set this to true to create backup copies of your original files before any updates are made.
+
 This provides a safety net in case you need to revert any changes.
+
+It creates a backup folder in the same directory as the app and saves the backup files there with a timestamp.
 
 #### `sheets` : Sheet names to be processed
 
@@ -199,6 +223,37 @@ For each sheet, provide:
 - `name`: The exact name of the sheet in the Excel file.
 - `header_row` (optional): The row number containing the column headers. Defaults to the first row if not provided.
 - `start_row` (optional): The row number where your actual data begins. Defaults to the second row if not provided.
+
+Header row can not be greater than start row
+
+#### `values_def` : Define values to be reused in query filters
+
+Here you can define reusable values to be used in query filters.
+
+Define it like this in root:
+
+```xml
+<values_def key="my_custom_key">
+  <values>45</values>
+  <values>346</values>
+  <values>634</values>
+</values_def>
+```
+
+Then you can use it in your query like this:
+
+```xml
+<filters column="ID" compare="EQUALS">
+  <values_def_key>HR_IDS</values_def_key>
+  <values_def_key>DEV_IDS</values_def_key>
+</filters>
+```
+
+**Rules:**
+
+- Keys must be unique
+- Key name should not contain any spaces or special characters
+- You can use multiple definition keys in a single filter query which will concatenate the values
 
 #### `query` : Query items
 
@@ -217,6 +272,7 @@ Each query item consists of:
         - `column`: The column to filter on.
         - `compare`: The comparison operator (e.g., EQUALS, CONTAINS).
         - `values`: A list of values to compare against.
+        - `values_def_key`: A key to reference the values defined in the `values_def` section.
 
 ### Compare Operators
 
@@ -271,7 +327,6 @@ Used in updating values in the update queries
         - First value is the value to be replaced
         - Second value is the value to replace with
 
-
 ## Usage
 
 ```bash
@@ -299,7 +354,9 @@ Update rows in Excel file based on the parameters provided
 ```bash
 ExcelQueryCLI.exe update <query-file-path> -p <parallelism> -l <log-level> -c <commercial>
 ```
+
 Example usage
+
 ```bash
 ExcelQueryCLI.exe update "update.xml" -p 4 -l Debug -c true
 ```
@@ -311,6 +368,7 @@ Delete rows in Excel file based on the parameters provided
 ```bash
 ExcelQueryCLI.exe delete -q <query-file-path> -p <parallelism> -l <log-level> -c <commercial>
 ```
+
 Example usage
 
 ```bash
@@ -327,10 +385,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Added possibility to pass sheets path inside query element. This will be concatenated with the root sheet paths
 - Added option to set log level via '-l' or '--log-level' parameter
-- Added option to set commercial usage via '-c' or '--commercial' parameter
-- Query file no longer needs parameter name you can pass it as argument after 'delete' or 'update' command
+- Added option to set commercial usage via '-c' or '--commercial' parameter (if enabled you need to use EPPlus license
+  file)
+- Query file no longer needs parameter name you can pass it as argument after 'delete' or 'update' command (this is a
+  breaking change)
 - Fixed an issue where duplicated source files can be passed when passing directories
-- Update cell function now checks if old value is same as new value before updating
+- Update cell function now checks if old value is same as new value before updating resulting in correct update count
+- Added support for defining and reusing values in query files (values_def element)
 
 ### v2.4
 
