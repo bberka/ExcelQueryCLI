@@ -5,7 +5,7 @@ using ExcelQueryCLI.Common;
 using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using Newtonsoft.Json;
-using Serilog;
+using Newtonsoft.Json.Converters;
 using Throw;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -96,8 +96,6 @@ public sealed record ExcelQueryRoot
 
   public static ExcelQueryRoot ParseFile(string path, SupportedFileType fileType) {
     var text = File.ReadAllText(path);
-    Log.Verbose("Parsing {Path} as {FileType}", path, fileType);
-    Log.Debug("Text: {Text}", text);
     return fileType switch {
       SupportedFileType.YAML => ParseYamlText(text),
       SupportedFileType.JSON => ParseJsonText(text),
@@ -112,9 +110,7 @@ public sealed record ExcelQueryRoot
                        .WithEnforceRequiredMembers()
                        .Build();
     var yamlObject = deserializer.Deserialize<ExcelQueryRoot>(yaml);
-    Log.Debug("Parsed YAML: {@YamlObject}", yamlObject);
     yamlObject.Validate();
-    Log.Verbose("Validated YAML: {@YamlObject}", yamlObject);
     return yamlObject;
   }
 
@@ -122,11 +118,9 @@ public sealed record ExcelQueryRoot
     var q = JsonConvert.DeserializeObject<ExcelQueryRoot>(text,
                                                           new JsonSerializerSettings() {
                                                             Culture = CultureInfo.InvariantCulture,
-                                                            Converters = { new Newtonsoft.Json.Converters.StringEnumConverter() }
+                                                            Converters = { new StringEnumConverter() }
                                                           }) ?? throw new ArgumentException("Invalid JSON");
-    Log.Debug("Parsed JSON: {@Q}", q);
     q.Validate();
-    Log.Verbose("Validated JSON: {@Q}", q);
     return q;
   }
 
@@ -134,9 +128,7 @@ public sealed record ExcelQueryRoot
     var xmlSerializer = new XmlSerializer(typeof(ExcelQueryRoot), new XmlRootAttribute("root"));
     using var reader = new StringReader(text);
     var q = (ExcelQueryRoot?)xmlSerializer.Deserialize(reader) ?? throw new ArgumentException("Invalid XML");
-    Log.Debug("Parsed XML: {@Q}", q);
     q.Validate();
-    Log.Verbose("Validated XML: {@Q}", q);
     return q;
   }
 

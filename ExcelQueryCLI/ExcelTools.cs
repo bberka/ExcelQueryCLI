@@ -4,7 +4,6 @@ using ExcelQueryCLI.Data;
 using ExcelQueryCLI.Models.ValueObjects;
 using ExcelQueryCLI.Static;
 using OfficeOpenXml;
-using Serilog;
 
 namespace ExcelQueryCLI;
 
@@ -75,24 +74,15 @@ internal static class ExcelTools
   }
 
   internal static string? GetNewCellValue(string? cellValue, string? setValue, UpdateOperator setOperator) {
-    Log.Verbose("UpdateCellValue::Cell Value: {cellValue}, Set Value: {setValue}, Operator: {setOperator}",
-                cellValue,
-                setValue,
-                setOperator);
-
     var isRequiredToParse = setOperator is UpdateOperator.MULTIPLY or UpdateOperator.DIVIDE or UpdateOperator.ADD or UpdateOperator.SUBTRACT;
-
-
     double? parsedOldValue = null;
     double? parsedNewValue = null;
     if (isRequiredToParse) {
       if (!double.TryParse(cellValue, CultureInfo.InvariantCulture, out var oldValueDouble)) {
-        Log.Verbose("UpdateCellValue::Failed to parse old value: {oldValue}", cellValue);
         return cellValue;
       }
 
       if (!double.TryParse(setValue, CultureInfo.InvariantCulture, out var newValueDouble)) {
-        Log.Verbose("UpdateCellValue::Failed to parse new value: {newValue}", setValue);
         return cellValue;
       }
 
@@ -106,38 +96,30 @@ internal static class ExcelTools
       case UpdateOperator.MULTIPLY:
         if (parsedOldValue.HasValue && parsedNewValue.HasValue) {
           var val = ((double)(parsedOldValue * parsedNewValue)).ToString(CultureInfo.InvariantCulture);
-          Log.Verbose("UpdateCellValue::Multiplying {oldValue} by {newValue} = {result}", parsedOldValue, parsedNewValue, val);
           return val;
         }
 
-        Log.Verbose("UpdateCellValue::Failed to parse old or new value: {oldValue} {newValue}", cellValue, setValue);
         return cellValue;
       case UpdateOperator.DIVIDE:
         if (parsedOldValue.HasValue && parsedNewValue.HasValue) {
           var val = ((double)(parsedOldValue / parsedNewValue)).ToString(CultureInfo.InvariantCulture);
-          Log.Verbose("UpdateCellValue::Dividing {oldValue} by {newValue} = {result}", parsedOldValue, parsedNewValue, val);
           return val;
         }
 
-        Log.Verbose("UpdateCellValue::Failed to parse old or new value: {oldValue} {newValue}", cellValue, setValue);
         return cellValue;
       case UpdateOperator.ADD:
         if (parsedOldValue.HasValue && parsedNewValue.HasValue) {
           var val = ((double)(parsedOldValue + parsedNewValue)).ToString(CultureInfo.InvariantCulture);
-          Log.Verbose("UpdateCellValue::Adding {oldValue} by {newValue} = {result}", parsedOldValue, parsedNewValue, val);
           return val;
         }
 
-        Log.Verbose("UpdateCellValue::Failed to parse old or new value: {oldValue} {newValue}", cellValue, setValue);
         return cellValue;
       case UpdateOperator.SUBTRACT:
         if (parsedOldValue.HasValue && parsedNewValue.HasValue) {
           var val = ((double)(parsedOldValue - parsedNewValue)).ToString(CultureInfo.InvariantCulture);
-          Log.Verbose("UpdateCellValue::Subtracting {oldValue} by {newValue} = {result}", parsedOldValue, parsedNewValue, val);
           return val;
         }
 
-        Log.Verbose("UpdateCellValue::Failed to parse old or new value: {oldValue} {newValue}", cellValue, setValue);
         return cellValue;
       case UpdateOperator.APPEND:
         return cellValue + setValue;

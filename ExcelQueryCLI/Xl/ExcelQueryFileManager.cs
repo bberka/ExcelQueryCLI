@@ -33,24 +33,16 @@ public class ExcelQueryFileManager(
     foreach (var sheet in sheets) {
       var worksheet = workbook.Worksheets.FirstOrDefault(x => x.Name == sheet.Name || x.Name.Equals(sheet.Name, StringComparison.OrdinalIgnoreCase));
       if (worksheet is null) {
-        _logger.Debug("Sheet {sheetName} not found ", sheet.Name);
         continue;
       }
 
-
       var rowCount = worksheet.Dimension.Rows;
       _logger.Information("Processing sheet {sheetName}", sheet.Name);
-
-      _logger.Verbose("Processing sheet headers {sheetName}", sheet.Name);
       var headers = ExcelTools.GetHeadersDictionary(worksheet, sheet.HeaderRow);
-      _logger.Verbose("Processed sheet headers {sheetName} {headerCount}", sheet.Name, headers.Count);
-
-
       var updatedRowCount = 0;
       var updatedCellCount = 0;
       var deletedRowCount = 0;
       var simpleData = new ExcelSimpleData(worksheet, headers);
-      _logger.Verbose("Processing sheet rows {sheetName}", sheet.Name);
       for (var r = sheet.StartRow; r < rowCount + 1; r++) {
         var beforeDeletedCount = deletedRowCount;
         foreach (var deleteQuery in DeleteQueries) {
@@ -59,7 +51,6 @@ public class ExcelQueryFileManager(
           var resultDeleteRow = DeleteRow(simpleData, r, deleteQuery);
           var isDeleted = resultDeleteRow > 0;
           if (!isDeleted) continue;
-          _logger.Verbose("Row deleted: {row} in {sheet}", r, FilePath);
           deletedRowCount++;
         }
 
@@ -71,7 +62,6 @@ public class ExcelQueryFileManager(
           var resultUpdateRow = UpdateRow(simpleData, r, updateQuery);
           var isUpdated = resultUpdateRow > 0;
           if (!isUpdated) continue;
-          _logger.Verbose("Row updated: {row} in {sheet}", r, FilePath);
           updatedRowCount++;
           updatedCellCount += resultUpdateRow;
         }
