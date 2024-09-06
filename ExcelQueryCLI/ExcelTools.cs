@@ -207,13 +207,22 @@ internal static class ExcelTools
     return false;
   }
 
-  public static void BackupFile(string file) {
+  public static string BackupFileToTemp(string file) {
+    var backupFolder = Path.GetTempPath();
+    if (!Directory.Exists(backupFolder)) Directory.CreateDirectory(backupFolder);
+
+    var backupFile = Path.Combine(backupFolder, Path.GetFileNameWithoutExtension(file) + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + Path.GetExtension(file));
+    File.Copy(file, backupFile);
+    return backupFile;
+  }
+
+  public static void MoveFileToBackup(string file) {
     //Create a backup folder in current directory and add timestamp to the file name and copy
     var backupFolder = Path.Combine(Directory.GetCurrentDirectory(), "backup");
     if (!Directory.Exists(backupFolder)) Directory.CreateDirectory(backupFolder);
 
     var backupFile = Path.Combine(backupFolder, Path.GetFileNameWithoutExtension(file) + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + Path.GetExtension(file));
-    File.Copy(file, backupFile);
+    File.Move(file, backupFile);
   }
 
   public static SupportedFileType GetFileType(string file) {

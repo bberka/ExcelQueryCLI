@@ -16,7 +16,11 @@ public class ExcelQueryFileManager(
 {
   private readonly ILogger _logger = Log.ForContext("FilePath", FilePath);
 
-  public void Run() {
+  /// <summary>
+  /// Runs the query on the Excel file
+  /// </summary>
+  /// <returns>Number of sheets updated</returns>
+  public int Run() {
     var sheets = Sheets.Concat(UpdateQueries.SelectMany(x => x.Sheets))
                        .Concat(DeleteQueries.SelectMany(x => x.Sheets))
                        .DistinctBy(x => x.Name)
@@ -83,6 +87,8 @@ public class ExcelQueryFileManager(
     else {
       _logger.Information("No sheets updated");
     }
+
+    return updatedSheets;
   }
 
   private static int UpdateRow(ExcelSimpleData excelSimpleData,

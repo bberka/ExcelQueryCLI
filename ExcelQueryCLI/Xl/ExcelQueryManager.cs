@@ -18,10 +18,17 @@ public static class ExcelQueryManager
                      },
                      file => {
                        try {
-                         if (query.Backup) ExcelTools.BackupFile(file);
+                         var bkFilePath = string.Empty;
+                         if (query.Backup) bkFilePath = ExcelTools.BackupFileToTemp(file);
 
                          var excelFileManager = new ExcelQueryFileManager(file, query.Sheets, query.QueryUpdate, query.QueryDelete);
-                         excelFileManager.Run();
+                         var updatedCount = excelFileManager.Run();
+                         if (!string.IsNullOrEmpty(bkFilePath)) {
+                           if (updatedCount > 0)
+                             ExcelTools.MoveFileToBackup(bkFilePath);
+                           else
+                             File.Delete(bkFilePath);
+                         }
                        }
                        catch (Exception ex) {
                          _logger.Error(ex, "Exception while processing file {file}", file);
