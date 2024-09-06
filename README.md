@@ -331,7 +331,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### v2.6
 - Cleanup
 - Fixed an issue where passing directories were not working correctly
-
+- Now only when excel file updated backup will be created
+ 
 ### v2.5
 
 - Added possibility to pass sheets path inside query element. This will be concatenated with the root sheet paths
