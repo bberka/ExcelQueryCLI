@@ -145,7 +145,8 @@ internal static class ExcelTools
   /// <param name="sourceList"></param>
   /// <returns></returns>
   /// <exception cref="Exception"></exception>
-  public static IEnumerable<string> GetExcelFilesList(string[] sourceList) {
+  public static List<string> GetExcelFilesList(string[] sourceList) {
+    var array = new List<string>();
     foreach (var source in sourceList) {
       var isFile = File.Exists(source);
       var isDirectory = Directory.Exists(source);
@@ -155,11 +156,14 @@ internal static class ExcelTools
       if (isDirectory) {
         var files = Directory.GetFiles(source, "*.*", SearchOption.AllDirectories)
                              .Where(s => StaticSettings.SupportedExtensions.Contains(Path.GetExtension(s), StringComparer.OrdinalIgnoreCase));
-        foreach (var file in files) yield return file;
+        array.AddRange(files);
       }
-
-      yield return source;
+      else {
+        array.Add(source);
+      }
     }
+
+    return array.Distinct().ToList();
   }
 
   public static Dictionary<int, string> GetHeadersDictionary(ExcelWorksheet worksheet, int headerRowNumber) {

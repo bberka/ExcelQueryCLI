@@ -11,7 +11,7 @@ public static class ExcelQueryManager
   public static void RunQuery(ExcelQueryRoot query,
                               byte parallelThreads = StaticSettings.DefaultParallelThreads) {
     _logger.Information("Processing files");
-    var files = ExcelTools.GetExcelFilesList(query.Source).Distinct().ToList(); //must cast before looping to avoid errors in progress
+    var files = ExcelTools.GetExcelFilesList(query.Source); //must cast before looping to avoid errors in progress
     Parallel.ForEach(files,
                      new ParallelOptions() {
                        MaxDegreeOfParallelism = parallelThreads
